@@ -12,8 +12,9 @@ const VERSION = "0.1.0"
 
 type Harmonia struct {
 	*discordgo.Session
-	Commands map[string]*SlashCommand
-	running  bool
+	Commands          map[string]*SlashCommand
+	ComponentHandlers map[string]func(h *Harmonia, i *Invocation)
+	running           bool
 }
 
 func New(token string) (h *Harmonia, err error) {
@@ -23,8 +24,9 @@ func New(token string) (h *Harmonia, err error) {
 	}
 
 	h = &Harmonia{
-		Session:  s,
-		Commands: make(map[string]*SlashCommand),
+		Session:           s,
+		Commands:          make(map[string]*SlashCommand),
+		ComponentHandlers: make(map[string]func(h *Harmonia, i *Invocation)),
 	}
 
 	return h, err
@@ -138,6 +140,57 @@ func (h *Harmonia) Respond(i *Invocation, content string) error {
 	})
 }
 
+func (h *Harmonia) EphemeralRespond(i *Invocation, content string) error {
+	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: content,
+			Flags:   1 << 6,
+		},
+	})
+}
+
+func (h *Harmonia) RespondWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) error {
+	comp := ParseComponentMatrix(components)
+	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content:    content,
+			Components: comp,
+		},
+	})
+}
+
+func (h *Harmonia) RespondComplex(i *Invocation, resp *discordgo.InteractionResponse) error {
+	return h.InteractionRespond(i.Interaction, resp)
+}
+
+func (h *Harmonia) DeferRespond(i *Invocation) error {
+	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+	})
+}
+
+func (h *Harmonia) EditResponse(i *Invocation, content string) error {
+	_, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content: content,
+	})
+	return err
+}
+
+func (h *Harmonia) EditResponseWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) error {
+	comp := ParseComponentMatrix(components)
+	_, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content:    content,
+		Components: comp,
+	})
+	return err
+}
+
+func (h *Harmonia) DeleteResponse(i *Invocation) error {
+	return h.InteractionResponseDelete(i.Interaction)
+}
+
 func (h *Harmonia) Followup(i *Invocation, content string) (*Followup, error) {
 	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 		Content: content,
@@ -145,8 +198,41 @@ func (h *Harmonia) Followup(i *Invocation, content string) (*Followup, error) {
 	return h.followupFromMessage(m, i.Interaction), err
 }
 
-func (h *Harmonia) EditFollowup(f *Followup, data *discordgo.WebhookEdit) (*Followup, error) {
-	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, data)
+func (h *Harmonia) EphemeralFollowup(i *Invocation, content string) (*Followup, error) {
+	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+		Content: content,
+		Flags:   1 << 6,
+	})
+	return h.followupFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) FollowupWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*Followup, error) {
+	comp := ParseComponentMatrix(components)
+	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+		Content:    content,
+		Components: comp,
+	})
+	return h.followupFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) FollowupComplex(i *Invocation, params *discordgo.WebhookParams) (*Followup, error) {
+	m, err := h.FollowupMessageCreate(i.Interaction, true, params)
+	return h.followupFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) EditFollowup(f *Followup, content string) (*Followup, error) {
+	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, &discordgo.WebhookEdit{
+		Content: content,
+	})
+	return h.followupFromMessage(m, f.Interaction), err
+}
+
+func (h *Harmonia) EditFollowupWithComponents(f *Followup, content string, components [][]discordgo.MessageComponent) (*Followup, error) {
+	comp := ParseComponentMatrix(components)
+	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, &discordgo.WebhookEdit{
+		Content:    content,
+		Components: comp,
+	})
 	return h.followupFromMessage(m, f.Interaction), err
 }
 
@@ -154,22 +240,61 @@ func (h *Harmonia) DeleteFollowup(f *Followup) error {
 	return h.FollowupMessageDelete(f.Interaction, f.ID)
 }
 
+func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia, i *Invocation)) error {
+	if customID == "" {
+		return errors.New("Empty CustomID")
+	}
+
+	if _, ok := h.ComponentHandlers[customID]; ok {
+		return fmt.Errorf("CustomID '%v' already exists", customID)
+	}
+
+	h.ComponentHandlers[customID] = handler
+	return nil
+}
+
+func (h *Harmonia) RemoveComponentHandler(customID string) error {
+	if _, ok := h.ComponentHandlers[customID]; !ok {
+		return fmt.Errorf("CustomID '%v' not found", customID)
+	}
+	delete(h.ComponentHandlers, customID)
+	return nil
+}
+
 func (h *Harmonia) Run() error {
 	h.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if sc, ok := h.Commands[i.ApplicationCommandData().Name]; ok {
-			//TODO: Error checking for each AND work out some way to use State in this.
-			guild, _ := h.Guild(i.GuildID)
-			channel, _ := h.Channel(i.ChannelID)
-			author, _ := h.authorFromInteraction(i.Interaction)
-			options := i.ApplicationCommandData().Options
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			if slashCommand, ok := h.Commands[i.ApplicationCommandData().Name]; ok {
+				//TODO: Error checking for each AND work out some way to use State in this.
+				guild, _ := h.Guild(i.GuildID)
+				channel, _ := h.Channel(i.ChannelID)
+				author, _ := h.authorFromInteraction(i.Interaction)
+				options := i.ApplicationCommandData().Options
 
-			sc.Handler.Do(h, &Invocation{
-				Interaction: i.Interaction,
-				Guild:       guild,
-				Channel:     channel,
-				Author:      author,
-				options:     options,
-			})
+				slashCommand.Handler.Do(h, &Invocation{
+					Interaction: i.Interaction,
+					Guild:       guild,
+					Channel:     channel,
+					Author:      author,
+					options:     options,
+				})
+			}
+		case discordgo.InteractionMessageComponent:
+			if componentHandler, ok := h.ComponentHandlers[i.MessageComponentData().CustomID]; ok {
+				guild, _ := h.Guild(i.GuildID)
+				channel, _ := h.Channel(i.ChannelID)
+				author, _ := h.authorFromInteraction(i.Interaction)
+				values := i.MessageComponentData().Values
+
+				componentHandler(h, &Invocation{
+					Interaction: i.Interaction,
+					Guild:       guild,
+					Channel:     channel,
+					Author:      author,
+					Values:      values,
+				})
+			}
 		}
 	})
 
@@ -206,6 +331,8 @@ func (h *Harmonia) RemoveCommand(name string) error {
 	if err != nil {
 		return err
 	}
+
+	delete(h.Commands, name)
 	return nil
 }
 

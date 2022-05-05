@@ -102,6 +102,7 @@ type Invocation struct {
 	Channel *discordgo.Channel
 	Author  *Author
 	options []*discordgo.ApplicationCommandInteractionDataOption
+	Values  []string
 }
 
 func (i *Invocation) GetOptionMap() map[string]*discordgo.ApplicationCommandInteractionDataOption {
