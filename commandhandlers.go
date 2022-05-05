@@ -11,7 +11,7 @@ type CommandHandler interface {
 
 type SingleCommandHandler struct {
 	Handler func(h *Harmonia, i *Invocation)
-	Options []*discordgo.ApplicationCommandOption
+	Options []*Option
 }
 
 func (s *SingleCommandHandler) Do(h *Harmonia, i *Invocation) {
@@ -19,7 +19,11 @@ func (s *SingleCommandHandler) Do(h *Harmonia, i *Invocation) {
 }
 
 func (s *SingleCommandHandler) GetOptions() []*discordgo.ApplicationCommandOption {
-	return s.Options
+	o := make([]*discordgo.ApplicationCommandOption, len(s.Options))
+	for i, v := range s.Options {
+		o[i] = v.ApplicationCommandOption
+	}
+	return o
 }
 
 type SubcommandHandler struct {
@@ -27,9 +31,9 @@ type SubcommandHandler struct {
 }
 
 func (s *SubcommandHandler) Do(h *Harmonia, i *Invocation) {
-	options := i.Options
+	options := i.options
 	if sc, ok := s.Subcommands[options[0].Name]; ok {
-		i.Options = options[0].Options
+		i.options = options[0].Options
 		sc.Handler.Do(h, i)
 	}
 }

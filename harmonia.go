@@ -165,7 +165,7 @@ func (h *Harmonia) Run() error {
 				Guild:       guild,
 				Channel:     channel,
 				Author:      author,
-				Options:     options,
+				options:     options,
 			})
 		}
 	})

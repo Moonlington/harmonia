@@ -101,7 +101,23 @@ type Invocation struct {
 	Guild   *discordgo.Guild
 	Channel *discordgo.Channel
 	Author  *Author
-	Options []*discordgo.ApplicationCommandInteractionDataOption
+	options []*discordgo.ApplicationCommandInteractionDataOption
+}
+
+func (i *Invocation) GetOptionMap() map[string]*discordgo.ApplicationCommandInteractionDataOption {
+	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(i.options))
+	for _, opt := range i.options {
+		optionMap[opt.Name] = opt
+	}
+	return optionMap
+}
+
+func (i *Invocation) GetOption(name string) *discordgo.ApplicationCommandInteractionDataOption {
+	option, ok := i.GetOptionMap()[name]
+	if !ok {
+		return nil
+	}
+	return option
 }
 
 type Followup struct {
