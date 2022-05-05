@@ -29,8 +29,16 @@ func init() {
 }
 
 func main() {
-	h.AddSlashCommandInGuild("ping", "Responds to the user with 'Pong!'", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		h.Respond(i, "Pong!")
+	c, _ := h.AddSlashCommandWithSubcommandsInGuild("main", "Subcommands example", *GuildID)
+	c.AddSubcommand("first", "First subcommand!", func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+		h.Respond(i, "This is the first subcommand!")
+	})
+	c.AddSubcommand("second", "Second subcommand!", func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+		h.Respond(i, "This is the second subcommand!")
+	})
+	group, _ := c.AddSubcommandGroup("third", "Third subcommand, but a group!")
+	group.AddSubcommand("fourth", "Fourth subcommand, but nested in the third one! I guess it's the actual third subcommand?", func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+		h.Respond(i, "This is the REAL third subcommand!")
 	})
 
 	err := h.Run()

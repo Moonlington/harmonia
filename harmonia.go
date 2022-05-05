@@ -2,6 +2,7 @@ package harmonia
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -20,7 +21,7 @@ func New(token string) (h *Harmonia, err error) {
 
 	h = &Harmonia{
 		Session:  s,
-		Commands: map[string]*SlashCommand{},
+		Commands: make(map[string]*SlashCommand),
 	}
 
 	return h, err
@@ -32,16 +33,14 @@ func (h *Harmonia) AddSlashCommand(name, description string, handler func(h *Har
 	}
 
 	if _, ok := h.Commands[name]; ok {
-		return nil, errors.New("Duplicate Slash Command name")
+		return nil, fmt.Errorf("Slash Command '%v' already exists", name)
 	}
 
 	c = &SlashCommand{
 		Name:        name,
 		Description: description,
-		Handler:     handler,
-		Options:     []*discordgo.ApplicationCommandOption{},
 		GuildID:     "",
-		// Subcommands: map[string]*SlashCommand{},
+		Handler:     &SingleCommandHandler{Handler: handler},
 	}
 
 	h.Commands[name] = c
@@ -54,16 +53,54 @@ func (h *Harmonia) AddSlashCommandInGuild(name, description, GuildID string, han
 	return
 }
 
-func (h *Harmonia) AuthorFromInteraction(i *discordgo.Interaction) (a *Author, err error) {
+func (h *Harmonia) AddSlashCommandWithSubcommands(name, description string) (c *SlashCommand, err error) {
+	if name == "" {
+		return nil, errors.New("Empty Slash Command name")
+	}
+
+	if _, ok := h.Commands[name]; ok {
+		return nil, fmt.Errorf("Slash Command '%v' already exists", name)
+	}
+
+	c = &SlashCommand{
+		Name:        name,
+		Description: description,
+		GuildID:     "",
+		Handler:     &SubcommandHandler{Subcommands: make(map[string]*SubSlashCommand)},
+	}
+
+	h.Commands[name] = c
+	return
+}
+
+func (h *Harmonia) AddSlashCommandWithSubcommandsInGuild(name, description, GuildID string) (c *SlashCommand, err error) {
+	c, err = h.AddSlashCommandWithSubcommands(name, description)
+	c.GuildID = GuildID
+	return
+}
+
+func (h *Harmonia) authorFromInteraction(i *discordgo.Interaction) (a *Author, err error) {
 	if i.Member == nil {
 		return &Author{User: i.User, IsMember: false}, nil
 	}
-	guild, _ := h.State.Guild(i.Member.GuildID)
+
+	// TODO: Error checking
+	guild, _ := h.Guild(i.Member.GuildID)
+
+	guildroles, _ := h.GuildRoles(i.Member.GuildID)
 	roles := make([]*discordgo.Role, len(i.Member.Roles))
-	for j, r := range i.Member.Roles {
-		role, _ := h.State.Role(i.Member.GuildID, r)
-		roles[j] = role
+
+	j := 0
+	for _, r := range guildroles {
+		for _, mr := range i.Member.Roles {
+			if r.ID == mr {
+				roles[j] = r
+				j++
+				break
+			}
+		}
 	}
+
 	a = &Author{User: i.Member.User,
 		IsMember:     true,
 		Guild:        guild,
@@ -89,14 +126,18 @@ func (h *Harmonia) Respond(i *Invocation, content string) error {
 func (h *Harmonia) Run() error {
 	h.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if sc, ok := h.Commands[i.ApplicationCommandData().Name]; ok {
-			guild, _ := h.State.Guild(i.GuildID)
-			channel, _ := h.State.Channel(i.ChannelID)
-			author, _ := h.AuthorFromInteraction(i.Interaction)
-			sc.Handler(h, &Invocation{
+			//TODO: Error checking for each AND work out some way to use State in this.
+			guild, _ := h.Guild(i.GuildID)
+			channel, _ := h.Channel(i.ChannelID)
+			author, _ := h.authorFromInteraction(i.Interaction)
+			options := i.ApplicationCommandData().Options
+
+			sc.Handler.Do(h, &Invocation{
 				Interaction: i.Interaction,
 				Guild:       guild,
 				Channel:     channel,
 				Author:      author,
+				Options:     options,
 			})
 		}
 	})
@@ -106,16 +147,33 @@ func (h *Harmonia) Run() error {
 		return err
 	}
 
-	for _, v := range h.Commands {
-		cmd, err := h.ApplicationCommandCreate(h.State.User.ID, v.GuildID, &discordgo.ApplicationCommand{
-			Name:        v.Name,
-			Description: v.Description,
-			Options:     v.Options,
+	for _, command := range h.Commands {
+		cmd, err := h.ApplicationCommandCreate(h.State.User.ID, command.GuildID, &discordgo.ApplicationCommand{
+			Name:        command.Name,
+			Description: command.Description,
+			Options:     command.Handler.GetOptions(),
 		})
 		if err != nil {
 			return err
 		}
-		v.registration = cmd
+		command.registration = cmd
+	}
+	return nil
+}
+
+func (h *Harmonia) RemoveCommand(name string) error {
+	command, ok := h.Commands[name]
+	if !ok {
+		return fmt.Errorf("Command '%v' was not found", name)
+	}
+
+	if command.registration == nil {
+		return fmt.Errorf("Command '%v' was not registered", name)
+	}
+
+	err := h.ApplicationCommandDelete(h.State.User.ID, command.GuildID, command.registration.ID)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -125,6 +183,7 @@ func (h *Harmonia) RemoveAllCommands() error {
 		if v.registration == nil {
 			continue
 		}
+
 		err := h.ApplicationCommandDelete(h.State.User.ID, v.GuildID, v.registration.ID)
 		if err != nil {
 			return err

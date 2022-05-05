@@ -1,6 +1,8 @@
 package harmonia
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -9,11 +11,89 @@ import (
 type SlashCommand struct {
 	Name         string
 	Description  string
-	Handler      func(h *Harmonia, i *Invocation)
-	Options      []*discordgo.ApplicationCommandOption
 	GuildID      string
+	Handler      CommandHandler
 	registration *discordgo.ApplicationCommand
-	// Subcommands map[string]*SlashCommand
+}
+
+func (s *SlashCommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SubSlashCommand, err error) {
+	if name == "" {
+		return nil, errors.New("Empty Subcommand name")
+	}
+
+	ch, ok := s.Handler.(*SubcommandHandler)
+	if !ok {
+		return nil, fmt.Errorf("Slash Command '%v' does not have a SubcommandHandler", s.Name)
+	}
+
+	if _, ok := ch.Subcommands[name]; ok {
+		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
+	}
+
+	sub = &SubSlashCommand{
+		Name:        name,
+		Description: description,
+		Handler:     &SingleCommandHandler{Handler: handler},
+	}
+
+	ch.Subcommands[name] = sub
+	return
+}
+
+func (s *SlashCommand) AddSubcommandGroup(name, description string) (sub *SubSlashCommand, err error) {
+	if name == "" {
+		return nil, errors.New("Empty Subcommand name")
+	}
+
+	ch, ok := s.Handler.(*SubcommandHandler)
+	if !ok {
+		return nil, fmt.Errorf("Slash Command '%v' does not have a SubcommandHandler", s.Name)
+	}
+
+	if _, ok := ch.Subcommands[name]; ok {
+		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
+	}
+
+	sub = &SubSlashCommand{
+		Name:        name,
+		Description: description,
+		IsGroup:     true,
+		Handler:     &SubcommandHandler{Subcommands: make(map[string]*SubSlashCommand)},
+	}
+
+	ch.Subcommands[name] = sub
+	return
+}
+
+type SubSlashCommand struct {
+	Name        string
+	Description string
+	IsGroup     bool
+	Handler     CommandHandler
+}
+
+func (s *SubSlashCommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SubSlashCommand, err error) {
+	if name == "" {
+		return nil, errors.New("Empty Subcommand name")
+	}
+
+	ch, ok := s.Handler.(*SubcommandHandler)
+	if !ok {
+		return nil, fmt.Errorf("Subcommand '%v' does not have a SubcommandHandler", s.Name)
+	}
+
+	if _, ok := ch.Subcommands[name]; ok {
+		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
+	}
+
+	sub = &SubSlashCommand{
+		Name:        name,
+		Description: description,
+		Handler:     &SingleCommandHandler{Handler: handler},
+	}
+
+	ch.Subcommands[name] = sub
+	return
 }
 
 type Invocation struct {
@@ -21,6 +101,7 @@ type Invocation struct {
 	Guild   *discordgo.Guild
 	Channel *discordgo.Channel
 	Author  *Author
+	Options []*discordgo.ApplicationCommandInteractionDataOption
 }
 
 type Author struct {
