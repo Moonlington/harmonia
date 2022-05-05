@@ -8,7 +8,7 @@ import (
 )
 
 // VERSION of Harmonia, follows Semantic Versioning. (http://semver.org/)
-const VERSION = "0.1.0"
+const VERSION = "0.2.0"
 
 type Harmonia struct {
 	*discordgo.Session
