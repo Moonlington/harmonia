@@ -114,6 +114,18 @@ func (h *Harmonia) authorFromInteraction(i *discordgo.Interaction) (a *Author, e
 	return a, nil
 }
 
+func (h *Harmonia) followupFromMessage(m *discordgo.Message, i *discordgo.Interaction) *Followup {
+	f := &Followup{Message: m, Interaction: i}
+
+	guild, _ := h.Guild(m.GuildID)
+	f.Guild = guild
+
+	channel, _ := h.Channel(m.ChannelID)
+	f.Channel = channel
+
+	return f
+}
+
 func (h *Harmonia) Respond(i *Invocation, content string) error {
 	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -121,6 +133,22 @@ func (h *Harmonia) Respond(i *Invocation, content string) error {
 			Content: content,
 		},
 	})
+}
+
+func (h *Harmonia) Followup(i *Invocation, content string) (*Followup, error) {
+	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+		Content: content,
+	})
+	return h.followupFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) EditFollowup(f *Followup, data *discordgo.WebhookEdit) (*Followup, error) {
+	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, data)
+	return h.followupFromMessage(m, f.Interaction), err
+}
+
+func (h *Harmonia) DeleteFollowup(f *Followup) error {
+	return h.FollowupMessageDelete(f.Interaction, f.ID)
 }
 
 func (h *Harmonia) Run() error {

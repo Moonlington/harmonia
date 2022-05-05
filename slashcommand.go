@@ -104,6 +104,13 @@ type Invocation struct {
 	Options []*discordgo.ApplicationCommandInteractionDataOption
 }
 
+type Followup struct {
+	*discordgo.Message
+	Interaction *discordgo.Interaction
+	Channel     *discordgo.Channel
+	Guild       *discordgo.Guild
+}
+
 type Author struct {
 	*discordgo.User
 	IsMember     bool
