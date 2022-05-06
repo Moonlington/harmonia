@@ -119,18 +119,6 @@ func (h *Harmonia) authorFromInteraction(i *discordgo.Interaction) (a *Author, e
 	return a, nil
 }
 
-func (h *Harmonia) followupFromMessage(m *discordgo.Message, i *discordgo.Interaction) *Followup {
-	f := &Followup{Message: m, Interaction: i}
-
-	guild, _ := h.Guild(m.GuildID)
-	f.Guild = guild
-
-	channel, _ := h.Channel(m.ChannelID)
-	f.Channel = channel
-
-	return f
-}
-
 func (h *Harmonia) Respond(i *Invocation, content string) error {
 	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -189,6 +177,20 @@ func (h *Harmonia) EditResponseWithComponents(i *Invocation, content string, com
 
 func (h *Harmonia) DeleteResponse(i *Invocation) error {
 	return h.InteractionResponseDelete(i.Interaction)
+}
+
+func (h *Harmonia) followupFromMessage(m *discordgo.Message, i *discordgo.Interaction) *Followup {
+	f := &Followup{Message: m, Interaction: i}
+
+	if m != nil {
+		guild, _ := h.Guild(m.GuildID)
+		f.Guild = guild
+
+		channel, _ := h.Channel(m.ChannelID)
+		f.Channel = channel
+	}
+
+	return f
 }
 
 func (h *Harmonia) Followup(i *Invocation, content string) (*Followup, error) {
@@ -253,11 +255,35 @@ func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia
 	return nil
 }
 
+func (h *Harmonia) AddComponentHandlerToFollowup(f *Followup, customID string, handler func(h *Harmonia, i *Invocation)) error {
+	if customID == "" {
+		return errors.New("Empty CustomID")
+	}
+
+	followupcustomID := fmt.Sprintf("%v-%v", f.ID, customID)
+
+	if _, ok := h.ComponentHandlers[followupcustomID]; ok {
+		return fmt.Errorf("CustomID '%v' already exists on Followup '%v'", customID, f.ID)
+	}
+
+	h.ComponentHandlers[followupcustomID] = handler
+	return nil
+}
+
 func (h *Harmonia) RemoveComponentHandler(customID string) error {
 	if _, ok := h.ComponentHandlers[customID]; !ok {
 		return fmt.Errorf("CustomID '%v' not found", customID)
 	}
 	delete(h.ComponentHandlers, customID)
+	return nil
+}
+
+func (h *Harmonia) RemoveComponentHandlerFromFollowup(f *Followup, customID string) error {
+	followupcustomID := fmt.Sprintf("%v-%v", f.ID, customID)
+	if _, ok := h.ComponentHandlers[followupcustomID]; !ok {
+		return fmt.Errorf("CustomID '%v' not found on Followup '%v'", customID, f.ID)
+	}
+	delete(h.ComponentHandlers, followupcustomID)
 	return nil
 }
 
@@ -280,6 +306,7 @@ func (h *Harmonia) Run() error {
 					options:     options,
 				})
 			}
+			return
 		case discordgo.InteractionMessageComponent:
 			if componentHandler, ok := h.ComponentHandlers[i.MessageComponentData().CustomID]; ok {
 				guild, _ := h.Guild(i.GuildID)
@@ -294,6 +321,25 @@ func (h *Harmonia) Run() error {
 					Author:      author,
 					Values:      values,
 				})
+				return
+			}
+
+			followupcustomID := fmt.Sprintf("%v-%v", i.Message.ID, i.MessageComponentData().CustomID)
+
+			if componentHandler, ok := h.ComponentHandlers[followupcustomID]; ok {
+				guild, _ := h.Guild(i.GuildID)
+				channel, _ := h.Channel(i.ChannelID)
+				author, _ := h.authorFromInteraction(i.Interaction)
+				values := i.MessageComponentData().Values
+
+				componentHandler(h, &Invocation{
+					Interaction: i.Interaction,
+					Guild:       guild,
+					Channel:     channel,
+					Author:      author,
+					Values:      values,
+				})
+				return
 			}
 		}
 	})
