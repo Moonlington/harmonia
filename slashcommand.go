@@ -121,7 +121,7 @@ func (i *Invocation) GetOption(name string) *discordgo.ApplicationCommandInterac
 	return option
 }
 
-type Followup struct {
+type InteractionMessage struct {
 	*discordgo.Message
 	Interaction *discordgo.Interaction
 	Channel     *discordgo.Channel

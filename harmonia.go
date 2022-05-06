@@ -119,68 +119,8 @@ func (h *Harmonia) authorFromInteraction(i *discordgo.Interaction) (a *Author, e
 	return a, nil
 }
 
-func (h *Harmonia) Respond(i *Invocation, content string) error {
-	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: content,
-		},
-	})
-}
-
-func (h *Harmonia) EphemeralRespond(i *Invocation, content string) error {
-	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: content,
-			Flags:   1 << 6,
-		},
-	})
-}
-
-func (h *Harmonia) RespondWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) error {
-	comp := ParseComponentMatrix(components)
-	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content:    content,
-			Components: comp,
-		},
-	})
-}
-
-func (h *Harmonia) RespondComplex(i *Invocation, resp *discordgo.InteractionResponse) error {
-	return h.InteractionRespond(i.Interaction, resp)
-}
-
-func (h *Harmonia) DeferRespond(i *Invocation) error {
-	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-	})
-}
-
-func (h *Harmonia) EditResponse(i *Invocation, content string) error {
-	_, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Content: content,
-	})
-	return err
-}
-
-func (h *Harmonia) EditResponseWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) error {
-	comp := ParseComponentMatrix(components)
-	_, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Content:    content,
-		Components: comp,
-	})
-	return err
-}
-
-func (h *Harmonia) DeleteResponse(i *Invocation) error {
-	return h.InteractionResponseDelete(i.Interaction)
-}
-
-func (h *Harmonia) followupFromMessage(m *discordgo.Message, i *discordgo.Interaction) *Followup {
-	f := &Followup{Message: m, Interaction: i}
+func (h *Harmonia) interactionMessageFromMessage(m *discordgo.Message, i *discordgo.Interaction) *InteractionMessage {
+	f := &InteractionMessage{Message: m, Interaction: i}
 
 	if m != nil {
 		guild, _ := h.Guild(m.GuildID)
@@ -193,52 +133,132 @@ func (h *Harmonia) followupFromMessage(m *discordgo.Message, i *discordgo.Intera
 	return f
 }
 
-func (h *Harmonia) Followup(i *Invocation, content string) (*Followup, error) {
+func (h *Harmonia) Respond(i *Invocation, content string) (*InteractionMessage, error) {
+	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: content,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	m, err := h.InteractionResponse(i.Interaction)
+	return h.interactionMessageFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) EphemeralRespond(i *Invocation, content string) (*InteractionMessage, error) {
+	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: content,
+			Flags:   1 << 6,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	m, err := h.InteractionResponse(i.Interaction)
+	return h.interactionMessageFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) RespondWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
+	comp := ParseComponentMatrix(components)
+	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content:    content,
+			Components: comp,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	m, err := h.InteractionResponse(i.Interaction)
+	return h.interactionMessageFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) RespondComplex(i *Invocation, resp *discordgo.InteractionResponse) (*InteractionMessage, error) {
+	err := h.InteractionRespond(i.Interaction, resp)
+	if err != nil {
+		return nil, err
+	}
+	m, err := h.InteractionResponse(i.Interaction)
+	return h.interactionMessageFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) DeferRespond(i *Invocation) error {
+	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+	})
+}
+
+func (h *Harmonia) EditResponse(i *Invocation, content string) (*InteractionMessage, error) {
+	m, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content: content,
+	})
+	return h.interactionMessageFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) EditResponseWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
+	comp := ParseComponentMatrix(components)
+	m, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content:    content,
+		Components: comp,
+	})
+	return h.interactionMessageFromMessage(m, i.Interaction), err
+}
+
+func (h *Harmonia) DeleteResponse(i *Invocation) error {
+	return h.InteractionResponseDelete(i.Interaction)
+}
+
+func (h *Harmonia) Followup(i *Invocation, content string) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 		Content: content,
 	})
-	return h.followupFromMessage(m, i.Interaction), err
+	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
-func (h *Harmonia) EphemeralFollowup(i *Invocation, content string) (*Followup, error) {
+func (h *Harmonia) EphemeralFollowup(i *Invocation, content string) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 		Content: content,
 		Flags:   1 << 6,
 	})
-	return h.followupFromMessage(m, i.Interaction), err
+	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
-func (h *Harmonia) FollowupWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*Followup, error) {
+func (h *Harmonia) FollowupWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
 	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 		Content:    content,
 		Components: comp,
 	})
-	return h.followupFromMessage(m, i.Interaction), err
+	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
-func (h *Harmonia) FollowupComplex(i *Invocation, params *discordgo.WebhookParams) (*Followup, error) {
+func (h *Harmonia) FollowupComplex(i *Invocation, params *discordgo.WebhookParams) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageCreate(i.Interaction, true, params)
-	return h.followupFromMessage(m, i.Interaction), err
+	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
-func (h *Harmonia) EditFollowup(f *Followup, content string) (*Followup, error) {
+func (h *Harmonia) EditFollowup(f *InteractionMessage, content string) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, &discordgo.WebhookEdit{
 		Content: content,
 	})
-	return h.followupFromMessage(m, f.Interaction), err
+	return h.interactionMessageFromMessage(m, f.Interaction), err
 }
 
-func (h *Harmonia) EditFollowupWithComponents(f *Followup, content string, components [][]discordgo.MessageComponent) (*Followup, error) {
+func (h *Harmonia) EditFollowupWithComponents(f *InteractionMessage, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
 	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, &discordgo.WebhookEdit{
 		Content:    content,
 		Components: comp,
 	})
-	return h.followupFromMessage(m, f.Interaction), err
+	return h.interactionMessageFromMessage(m, f.Interaction), err
 }
 
-func (h *Harmonia) DeleteFollowup(f *Followup) error {
+func (h *Harmonia) DeleteFollowup(f *InteractionMessage) error {
 	return h.FollowupMessageDelete(f.Interaction, f.ID)
 }
 
@@ -255,7 +275,7 @@ func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia
 	return nil
 }
 
-func (h *Harmonia) AddComponentHandlerToFollowup(f *Followup, customID string, handler func(h *Harmonia, i *Invocation)) error {
+func (h *Harmonia) AddComponentHandlerToInteractionMessage(f *InteractionMessage, customID string, handler func(h *Harmonia, i *Invocation)) error {
 	if customID == "" {
 		return errors.New("Empty CustomID")
 	}
@@ -278,7 +298,7 @@ func (h *Harmonia) RemoveComponentHandler(customID string) error {
 	return nil
 }
 
-func (h *Harmonia) RemoveComponentHandlerFromFollowup(f *Followup, customID string) error {
+func (h *Harmonia) RemoveComponentHandlerFromInteractionMessage(f *InteractionMessage, customID string) error {
 	followupcustomID := fmt.Sprintf("%v-%v", f.ID, customID)
 	if _, ok := h.ComponentHandlers[followupcustomID]; !ok {
 		return fmt.Errorf("CustomID '%v' not found on Followup '%v'", customID, f.ID)
