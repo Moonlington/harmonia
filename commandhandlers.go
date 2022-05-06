@@ -4,20 +4,28 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// CommandHandler is an interface for command handlers.
 type CommandHandler interface {
+	// Do executes the CommandHandler.
 	Do(h *Harmonia, i *Invocation)
+	// GetOptions returns the options of the CommandHandler.
 	GetOptions() []*discordgo.ApplicationCommandOption
 }
 
+// A SingleCommandHandler describes the handler for a command with no subcommands.
 type SingleCommandHandler struct {
+	// Handler is the actual function of the SlashCommand
 	Handler func(h *Harmonia, i *Invocation)
+	// Options contain a slice of Options passed through the SlashCommand
 	Options []*Option
 }
 
+// Do executes the handler.
 func (s *SingleCommandHandler) Do(h *Harmonia, i *Invocation) {
 	s.Handler(h, i)
 }
 
+// GetOptions return the Options given to the SingleCommandHandler.
 func (s *SingleCommandHandler) GetOptions() []*discordgo.ApplicationCommandOption {
 	o := make([]*discordgo.ApplicationCommandOption, len(s.Options))
 	for i, v := range s.Options {
@@ -26,10 +34,13 @@ func (s *SingleCommandHandler) GetOptions() []*discordgo.ApplicationCommandOptio
 	return o
 }
 
+// A SubcommandHandler describes the handler for a command with subcommands.
 type SubcommandHandler struct {
+	// Subcommands contains a map of SubSlashCommands
 	Subcommands map[string]*SubSlashCommand
 }
 
+// Do handles the subcommands given to the SubcommandHandler
 func (s *SubcommandHandler) Do(h *Harmonia, i *Invocation) {
 	options := i.options
 	if sc, ok := s.Subcommands[options[0].Name]; ok {
@@ -38,6 +49,7 @@ func (s *SubcommandHandler) Do(h *Harmonia, i *Invocation) {
 	}
 }
 
+// GetOptions returns the subcommands parsed as ApplicationCommandOptions
 func (s *SubcommandHandler) GetOptions() []*discordgo.ApplicationCommandOption {
 	options := make([]*discordgo.ApplicationCommandOption, len(s.Subcommands))
 	i := 0

@@ -10,13 +10,14 @@ import (
 // VERSION of Harmonia, follows Semantic Versioning. (http://semver.org/)
 const VERSION = "0.2.0"
 
+// A Harmonia represents a connection to the Discord API and contains the slash commands and component handlers used by Harmonia.
 type Harmonia struct {
 	*discordgo.Session
 	Commands          map[string]*SlashCommand
 	ComponentHandlers map[string]func(h *Harmonia, i *Invocation)
-	running           bool
 }
 
+// New creates a new Discord session with the provided token and wraps the Harmonia struct around it.
 func New(token string) (h *Harmonia, err error) {
 	s, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -32,6 +33,7 @@ func New(token string) (h *Harmonia, err error) {
 	return h, err
 }
 
+// AddSlashCommand adds a slash command to Harmonia.
 func (h *Harmonia) AddSlashCommand(name, description string, handler func(h *Harmonia, i *Invocation)) (c *SlashCommand, err error) {
 	if name == "" {
 		return nil, errors.New("Empty Slash Command name")
@@ -52,12 +54,14 @@ func (h *Harmonia) AddSlashCommand(name, description string, handler func(h *Har
 	return
 }
 
+// AddSlashCommandInGuild does the same as AddSlashCommand, but only adds it for a specific GuildID.
 func (h *Harmonia) AddSlashCommandInGuild(name, description, GuildID string, handler func(h *Harmonia, i *Invocation)) (c *SlashCommand, err error) {
 	c, err = h.AddSlashCommand(name, description, handler)
 	c.GuildID = GuildID
 	return
 }
 
+// AddSlashCommandWithSubcommands adds a subcommand group, it itself has no handler, but you can use the returned SlashCommand to add Subcommands to the SlashCommand.
 func (h *Harmonia) AddSlashCommandWithSubcommands(name, description string) (c *SlashCommand, err error) {
 	if name == "" {
 		return nil, errors.New("Empty Slash Command name")
@@ -78,6 +82,7 @@ func (h *Harmonia) AddSlashCommandWithSubcommands(name, description string) (c *
 	return
 }
 
+// AddSlashCommandWithSubcommandsInGuild does the same as AddSlashCommandWithSubcommands, but only adds it for a specific GuildID.
 func (h *Harmonia) AddSlashCommandWithSubcommandsInGuild(name, description, GuildID string) (c *SlashCommand, err error) {
 	c, err = h.AddSlashCommandWithSubcommands(name, description)
 	c.GuildID = GuildID
@@ -133,6 +138,7 @@ func (h *Harmonia) interactionMessageFromMessage(m *discordgo.Message, i *discor
 	return f
 }
 
+// Respond allows Harmonia to easily respond to an Invocation with a string.
 func (h *Harmonia) Respond(i *Invocation, content string) (*InteractionMessage, error) {
 	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -147,6 +153,7 @@ func (h *Harmonia) Respond(i *Invocation, content string) (*InteractionMessage, 
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// EphemeralRespond does the same as Respond, but sets the flag such that only the invoker can see the message.
 func (h *Harmonia) EphemeralRespond(i *Invocation, content string) (*InteractionMessage, error) {
 	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -162,6 +169,7 @@ func (h *Harmonia) EphemeralRespond(i *Invocation, content string) (*Interaction
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// RespondWithComponents does the same as Respond, but also takes in a 2D slice of discordgo.MessageComponents that will be added to the response.
 func (h *Harmonia) RespondWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
 	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -178,6 +186,7 @@ func (h *Harmonia) RespondWithComponents(i *Invocation, content string, componen
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// RespondComplex allows you full freedom to respond with whatever you'd like.
 func (h *Harmonia) RespondComplex(i *Invocation, resp *discordgo.InteractionResponse) (*InteractionMessage, error) {
 	err := h.InteractionRespond(i.Interaction, resp)
 	if err != nil {
@@ -187,12 +196,14 @@ func (h *Harmonia) RespondComplex(i *Invocation, resp *discordgo.InteractionResp
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
-func (h *Harmonia) DeferRespond(i *Invocation) error {
+// DeferResponse sends an acknowledgement to the DiscordAPI, allowing you to send a follow-up message later. See Followup for that.
+func (h *Harmonia) DeferResponse(i *Invocation) error {
 	return h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 	})
 }
 
+// EditResponse edits an already sent response.
 func (h *Harmonia) EditResponse(i *Invocation, content string) (*InteractionMessage, error) {
 	m, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Content: content,
@@ -200,6 +211,7 @@ func (h *Harmonia) EditResponse(i *Invocation, content string) (*InteractionMess
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// EditResponseWithComponents does the same as EditResponse, but also takes in a 2D slice of discordgo.MessageComponents that will be added to the response.
 func (h *Harmonia) EditResponseWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
 	m, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
@@ -209,10 +221,12 @@ func (h *Harmonia) EditResponseWithComponents(i *Invocation, content string, com
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// DeleteResponse deletes a response.
 func (h *Harmonia) DeleteResponse(i *Invocation) error {
 	return h.InteractionResponseDelete(i.Interaction)
 }
 
+// Followup sends a follow-up message to the Interaction, this does require you to have used DeferResponse before.
 func (h *Harmonia) Followup(i *Invocation, content string) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 		Content: content,
@@ -220,6 +234,7 @@ func (h *Harmonia) Followup(i *Invocation, content string) (*InteractionMessage,
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// EphemeralFollowup does the same as Followup, but sets the flag such that only the invoker can see the message.
 func (h *Harmonia) EphemeralFollowup(i *Invocation, content string) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 		Content: content,
@@ -228,6 +243,7 @@ func (h *Harmonia) EphemeralFollowup(i *Invocation, content string) (*Interactio
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// FollowupWithComponents does the same as Followup, but also takes in a 2D slice of discordgo.MessageComponents that will be added to the response.
 func (h *Harmonia) FollowupWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
 	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
@@ -237,11 +253,13 @@ func (h *Harmonia) FollowupWithComponents(i *Invocation, content string, compone
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// FollowupComplex allows you full freedom to follow-up with whatever you'd like.
 func (h *Harmonia) FollowupComplex(i *Invocation, params *discordgo.WebhookParams) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageCreate(i.Interaction, true, params)
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
+// EditFollowup allows you to edit a follow-up message.
 func (h *Harmonia) EditFollowup(f *InteractionMessage, content string) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, &discordgo.WebhookEdit{
 		Content: content,
@@ -249,6 +267,7 @@ func (h *Harmonia) EditFollowup(f *InteractionMessage, content string) (*Interac
 	return h.interactionMessageFromMessage(m, f.Interaction), err
 }
 
+// EditFollowupWithComponents does the same as EditFollowup, but also takes in a 2D slice of discordgo.MessageComponents that will be added to the follow-up message.
 func (h *Harmonia) EditFollowupWithComponents(f *InteractionMessage, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
 	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, &discordgo.WebhookEdit{
@@ -258,10 +277,13 @@ func (h *Harmonia) EditFollowupWithComponents(f *InteractionMessage, content str
 	return h.interactionMessageFromMessage(m, f.Interaction), err
 }
 
+// DeleteFollowup deletes a follow-up message.
 func (h *Harmonia) DeleteFollowup(f *InteractionMessage) error {
 	return h.FollowupMessageDelete(f.Interaction, f.ID)
 }
 
+// AddComponentHandler adds a handler for a component.
+// I suggest this is only used for globally used components, and not for components used on a message by message basis. See AddComponentHandlerToInteractionMessage
 func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia, i *Invocation)) error {
 	if customID == "" {
 		return errors.New("Empty CustomID")
@@ -275,6 +297,8 @@ func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia
 	return nil
 }
 
+// AddComponentHandlerToInteractionMessage adds a handler for a component, but will be handled only on its original Interaction.
+// This is done by prepending the InteractionMessage's ID to the customID. Harmonia will do the heavy lifting from there.
 func (h *Harmonia) AddComponentHandlerToInteractionMessage(f *InteractionMessage, customID string, handler func(h *Harmonia, i *Invocation)) error {
 	if customID == "" {
 		return errors.New("Empty CustomID")
@@ -290,6 +314,7 @@ func (h *Harmonia) AddComponentHandlerToInteractionMessage(f *InteractionMessage
 	return nil
 }
 
+// RemoveComponentHandler removes a component handler.
 func (h *Harmonia) RemoveComponentHandler(customID string) error {
 	if _, ok := h.ComponentHandlers[customID]; !ok {
 		return fmt.Errorf("CustomID '%v' not found", customID)
@@ -298,6 +323,7 @@ func (h *Harmonia) RemoveComponentHandler(customID string) error {
 	return nil
 }
 
+// RemoveComponentHandlerFromInteractionMessage removes a component handler from an InteractionMessage.
 func (h *Harmonia) RemoveComponentHandlerFromInteractionMessage(f *InteractionMessage, customID string) error {
 	followupcustomID := fmt.Sprintf("%v-%v", f.ID, customID)
 	if _, ok := h.ComponentHandlers[followupcustomID]; !ok {
@@ -307,6 +333,7 @@ func (h *Harmonia) RemoveComponentHandlerFromInteractionMessage(f *InteractionMe
 	return nil
 }
 
+// Run starts the Harmonia bot up and does the handling for slash commands and components for you.
 func (h *Harmonia) Run() error {
 	h.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
@@ -383,6 +410,7 @@ func (h *Harmonia) Run() error {
 	return nil
 }
 
+// RemoveCommand removes a slash command from Harmonia and from the Discord API.
 func (h *Harmonia) RemoveCommand(name string) error {
 	command, ok := h.Commands[name]
 	if !ok {
@@ -402,6 +430,7 @@ func (h *Harmonia) RemoveCommand(name string) error {
 	return nil
 }
 
+// RemoveAllCommands does removes all registered commands on this Harmonia instance and from the Discord API.
 func (h *Harmonia) RemoveAllCommands() error {
 	for _, v := range h.Commands {
 		if v.registration == nil {
