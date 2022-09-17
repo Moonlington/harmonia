@@ -206,7 +206,7 @@ func (h *Harmonia) DeferResponse(i *Invocation) error {
 // EditResponse edits an already sent response.
 func (h *Harmonia) EditResponse(i *Invocation, content string) (*InteractionMessage, error) {
 	m, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Content: content,
+		Content: &content,
 	})
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
@@ -215,8 +215,8 @@ func (h *Harmonia) EditResponse(i *Invocation, content string) (*InteractionMess
 func (h *Harmonia) EditResponseWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
 	m, err := h.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Content:    content,
-		Components: comp,
+		Content:    &content,
+		Components: &comp,
 	})
 	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
@@ -262,7 +262,7 @@ func (h *Harmonia) FollowupComplex(i *Invocation, params *discordgo.WebhookParam
 // EditFollowup allows you to edit a follow-up message.
 func (h *Harmonia) EditFollowup(f *InteractionMessage, content string) (*InteractionMessage, error) {
 	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, &discordgo.WebhookEdit{
-		Content: content,
+		Content: &content,
 	})
 	return h.interactionMessageFromMessage(m, f.Interaction), err
 }
@@ -271,8 +271,8 @@ func (h *Harmonia) EditFollowup(f *InteractionMessage, content string) (*Interac
 func (h *Harmonia) EditFollowupWithComponents(f *InteractionMessage, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
 	m, err := h.FollowupMessageEdit(f.Interaction, f.ID, &discordgo.WebhookEdit{
-		Content:    content,
-		Components: comp,
+		Content:    &content,
+		Components: &comp,
 	})
 	return h.interactionMessageFromMessage(m, f.Interaction), err
 }
