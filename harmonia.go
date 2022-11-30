@@ -89,13 +89,14 @@ func (h *Harmonia) AddSlashCommandWithSubcommandsInGuild(name, description, Guil
 	return
 }
 
-func (h *Harmonia) authorFromInteraction(i *discordgo.Interaction) (a *Author, err error) {
+// AuthorFromInteraction uses the information obtained from the Interaction to create an Author.
+func (h *Harmonia) AuthorFromInteraction(i *discordgo.Interaction) (a *Author, err error) {
 	if i.Member == nil {
-		return &Author{User: i.User, IsMember: false}, nil
+		return h.AuthorFromUser(i.User), nil
 	}
 
-	// TODO: Error checking
-	guild, _ := h.Guild(i.Member.GuildID)
+	return h.AuthorFromMember(i.Member)
+}
 
 // AuthoerFromMember returns an Author from a *discordgo.Member.
 func (h *Harmonia) AuthorFromMember(member *discordgo.Member) (*Author, error) {
@@ -365,7 +366,7 @@ func (h *Harmonia) Run() error {
 				//TODO: Error checking for each AND work out some way to use State in this.
 				guild, _ := h.Guild(i.GuildID)
 				channel, _ := h.Channel(i.ChannelID)
-				author, _ := h.authorFromInteraction(i.Interaction)
+				author, _ := h.AuthorFromInteraction(i.Interaction)
 				options := i.ApplicationCommandData().Options
 
 				slashCommand.Handler.Do(h, &Invocation{
@@ -381,7 +382,7 @@ func (h *Harmonia) Run() error {
 			if componentHandler, ok := h.ComponentHandlers[i.MessageComponentData().CustomID]; ok {
 				guild, _ := h.Guild(i.GuildID)
 				channel, _ := h.Channel(i.ChannelID)
-				author, _ := h.authorFromInteraction(i.Interaction)
+				author, _ := h.AuthorFromInteraction(i.Interaction)
 				values := i.MessageComponentData().Values
 
 				componentHandler(h, &Invocation{
@@ -399,7 +400,7 @@ func (h *Harmonia) Run() error {
 			if componentHandler, ok := h.ComponentHandlers[followupcustomID]; ok {
 				guild, _ := h.Guild(i.GuildID)
 				channel, _ := h.Channel(i.ChannelID)
-				author, _ := h.authorFromInteraction(i.Interaction)
+				author, _ := h.AuthorFromInteraction(i.Interaction)
 				values := i.MessageComponentData().Values
 
 				componentHandler(h, &Invocation{
