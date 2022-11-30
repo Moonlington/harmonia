@@ -95,6 +95,7 @@ func (h *Harmonia) AuthorFromInteraction(i *discordgo.Interaction) (a *Author, e
 		return AuthorFromUser(i.User), nil
 	}
 
+	i.Member.GuildID = i.GuildID
 	return h.AuthorFromMember(i.Member)
 }
 
