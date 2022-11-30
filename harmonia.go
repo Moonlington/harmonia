@@ -97,31 +97,54 @@ func (h *Harmonia) authorFromInteraction(i *discordgo.Interaction) (a *Author, e
 	// TODO: Error checking
 	guild, _ := h.Guild(i.Member.GuildID)
 
-	guildroles, _ := h.GuildRoles(i.Member.GuildID)
-	roles := make([]*discordgo.Role, len(i.Member.Roles))
+// AuthoerFromMember returns an Author from a *discordgo.Member.
+func (h *Harmonia) AuthorFromMember(member *discordgo.Member) (*Author, error) {
+	guild, err := h.Guild(member.GuildID)
+	if err != nil {
+		return nil, err
+	}
 
-	j := 0
-	for _, r := range guildroles {
-		for _, mr := range i.Member.Roles {
-			if r.ID == mr {
-				roles[j] = r
-				j++
-				break
+	roles, err := h.RolesFromMember(member)
+	if err != nil {
+		return nil, err
+	}
+
+	a := &Author{User: member.User,
+		IsMember:     true,
+		Guild:        guild,
+		JoinedAt:     member.JoinedAt,
+		Nick:         member.Nick,
+		Deaf:         member.Deaf,
+		Mute:         member.Mute,
+		Roles:        roles,
+		PremiumSince: member.PremiumSince,
+	}
+	a.Avatar = member.Avatar
+	return a, nil
+}
+
+// RolesFromMember returns a slice of *discordgo.Role from a *discordgo.Member.
+func (h *Harmonia) RolesFromMember(member *discordgo.Member) ([]*discordgo.Role, error) {
+	guildroles, err := h.GuildRoles(member.GuildID)
+	if err != nil {
+		return nil, err
+	}
+
+	roles := make([]*discordgo.Role, 0, len(member.Roles))
+	for _, roleid := range member.Roles {
+		for _, role := range guildroles {
+			if role.ID == roleid {
+				roles = append(roles, role)
 			}
 		}
 	}
 
-	a = &Author{User: i.Member.User,
-		IsMember:     true,
-		Guild:        guild,
-		JoinedAt:     i.Member.JoinedAt,
-		Nick:         i.Member.Nick,
-		Deaf:         i.Member.Deaf,
-		Mute:         i.Member.Mute,
-		Roles:        roles,
-		PremiumSince: i.Member.PremiumSince}
-	a.Avatar = i.Member.Avatar
-	return a, nil
+	return roles, nil
+}
+
+// AuthorFromUser returns an Author from a *discordgo.User.
+func (*Harmonia) AuthorFromUser(user *discordgo.User) *Author {
+	return &Author{User: user, IsMember: false}
 }
 
 func (h *Harmonia) interactionMessageFromMessage(m *discordgo.Message, i *discordgo.Interaction) *InteractionMessage {
