@@ -92,7 +92,7 @@ func (h *Harmonia) AddSlashCommandWithSubcommandsInGuild(name, description, Guil
 // AuthorFromInteraction uses the information obtained from the Interaction to create an Author.
 func (h *Harmonia) AuthorFromInteraction(i *discordgo.Interaction) (a *Author, err error) {
 	if i.Member == nil {
-		return h.AuthorFromUser(i.User), nil
+		return AuthorFromUser(i.User), nil
 	}
 
 	return h.AuthorFromMember(i.Member)
@@ -141,11 +141,6 @@ func (h *Harmonia) RolesFromMember(member *discordgo.Member) ([]*discordgo.Role,
 	}
 
 	return roles, nil
-}
-
-// AuthorFromUser returns an Author from a *discordgo.User.
-func (*Harmonia) AuthorFromUser(user *discordgo.User) *Author {
-	return &Author{User: user, IsMember: false}
 }
 
 func (h *Harmonia) interactionMessageFromMessage(m *discordgo.Message, i *discordgo.Interaction) *InteractionMessage {
