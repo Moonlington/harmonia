@@ -169,54 +169,6 @@ func (h *Harmonia) interactionMessageFromMessage(m *discordgo.Message, i *discor
 	return f
 }
 
-// Respond allows Harmonia to easily respond to an Invocation with a string.
-func (h *Harmonia) Respond(i *Invocation, content string) (*InteractionMessage, error) {
-	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: content,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	m, err := h.InteractionResponse(i.Interaction)
-	return h.interactionMessageFromMessage(m, i.Interaction), err
-}
-
-// EphemeralRespond does the same as Respond, but sets the flag such that only the invoker can see the message.
-func (h *Harmonia) EphemeralRespond(i *Invocation, content string) (*InteractionMessage, error) {
-	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: content,
-			Flags:   1 << 6,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	m, err := h.InteractionResponse(i.Interaction)
-	return h.interactionMessageFromMessage(m, i.Interaction), err
-}
-
-// RespondWithComponents does the same as Respond, but also takes in a 2D slice of discordgo.MessageComponents that will be added to the response.
-func (h *Harmonia) RespondWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
-	comp := ParseComponentMatrix(components)
-	err := h.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content:    content,
-			Components: comp,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	m, err := h.InteractionResponse(i.Interaction)
-	return h.interactionMessageFromMessage(m, i.Interaction), err
-}
-
 // RespondComplex allows you full freedom to respond with whatever you'd like.
 func (h *Harmonia) RespondComplex(i *Invocation, resp *discordgo.InteractionResponse) (*InteractionMessage, error) {
 	err := h.InteractionRespond(i.Interaction, resp)
@@ -225,6 +177,39 @@ func (h *Harmonia) RespondComplex(i *Invocation, resp *discordgo.InteractionResp
 	}
 	m, err := h.InteractionResponse(i.Interaction)
 	return h.interactionMessageFromMessage(m, i.Interaction), err
+}
+
+// Respond allows Harmonia to easily respond to an Invocation with a string.
+func (h *Harmonia) Respond(i *Invocation, content string) (*InteractionMessage, error) {
+	return h.RespondComplex(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: content,
+		},
+	})
+}
+
+// EphemeralRespond does the same as Respond, but sets the flag such that only the invoker can see the message.
+func (h *Harmonia) EphemeralRespond(i *Invocation, content string) (*InteractionMessage, error) {
+	return h.RespondComplex(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: content,
+			Flags:   1 << 6,
+		},
+	})
+}
+
+// RespondWithComponents does the same as Respond, but also takes in a 2D slice of discordgo.MessageComponents that will be added to the response.
+func (h *Harmonia) RespondWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
+	comp := ParseComponentMatrix(components)
+	return h.RespondComplex(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content:    content,
+			Components: comp,
+		},
+	})
 }
 
 // DeferResponse sends an acknowledgement to the DiscordAPI, allowing you to send a follow-up message later. See Followup for that.
@@ -257,37 +242,34 @@ func (h *Harmonia) DeleteResponse(i *Invocation) error {
 	return h.InteractionResponseDelete(i.Interaction)
 }
 
+// FollowupComplex allows you full freedom to follow-up with whatever you'd like.
+func (h *Harmonia) FollowupComplex(i *Invocation, params *discordgo.WebhookParams) (*InteractionMessage, error) {
+	m, err := h.FollowupMessageCreate(i.Interaction, true, params)
+	return h.interactionMessageFromMessage(m, i.Interaction), err
+}
+
 // Followup sends a follow-up message to the Interaction, this does require you to have used DeferResponse before.
 func (h *Harmonia) Followup(i *Invocation, content string) (*InteractionMessage, error) {
-	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+	return h.FollowupComplex(i, &discordgo.WebhookParams{
 		Content: content,
 	})
-	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
 // EphemeralFollowup does the same as Followup, but sets the flag such that only the invoker can see the message.
 func (h *Harmonia) EphemeralFollowup(i *Invocation, content string) (*InteractionMessage, error) {
-	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+	return h.FollowupComplex(i, &discordgo.WebhookParams{
 		Content: content,
 		Flags:   1 << 6,
 	})
-	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
 // FollowupWithComponents does the same as Followup, but also takes in a 2D slice of discordgo.MessageComponents that will be added to the response.
 func (h *Harmonia) FollowupWithComponents(i *Invocation, content string, components [][]discordgo.MessageComponent) (*InteractionMessage, error) {
 	comp := ParseComponentMatrix(components)
-	m, err := h.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+	return h.FollowupComplex(i, &discordgo.WebhookParams{
 		Content:    content,
 		Components: comp,
 	})
-	return h.interactionMessageFromMessage(m, i.Interaction), err
-}
-
-// FollowupComplex allows you full freedom to follow-up with whatever you'd like.
-func (h *Harmonia) FollowupComplex(i *Invocation, params *discordgo.WebhookParams) (*InteractionMessage, error) {
-	m, err := h.FollowupMessageCreate(i.Interaction, true, params)
-	return h.interactionMessageFromMessage(m, i.Interaction), err
 }
 
 // EditFollowup allows you to edit a follow-up message.
