@@ -3,12 +3,15 @@ package harmonia
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 // VERSION of Harmonia, follows Semantic Versioning. (http://semver.org/)
 const VERSION = "0.5.3"
+
+var slashCommandNameRegex = regexp.MustCompile(`^[-_\p{L}\p{N}]{1,32}$`)
 
 // A Harmonia represents a connection to the Discord API and contains the slash commands and component handlers used by Harmonia.
 type Harmonia struct {
@@ -39,6 +42,10 @@ func (h *Harmonia) AddSlashCommand(name, description string, handler func(h *Har
 		return nil, errors.New("Empty Slash Command name")
 	}
 
+	if !slashCommandNameRegex.MatchString(name) {
+		return nil, errors.New("Slash Command name does not match with the CHAT_INPUT regex.")
+	}
+
 	if _, ok := h.Commands[name]; ok {
 		return nil, fmt.Errorf("Slash Command '%v' already exists", name)
 	}
@@ -65,6 +72,10 @@ func (h *Harmonia) AddSlashCommandInGuild(name, description, GuildID string, han
 func (h *Harmonia) AddSlashCommandWithSubcommands(name, description string) (c *SlashCommand, err error) {
 	if name == "" {
 		return nil, errors.New("Empty Slash Command name")
+	}
+
+	if !slashCommandNameRegex.MatchString(name) {
+		return nil, errors.New("Slash Command name does not match with the CHAT_INPUT regex.")
 	}
 
 	if _, ok := h.Commands[name]; ok {
