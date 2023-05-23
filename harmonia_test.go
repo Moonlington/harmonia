@@ -46,6 +46,11 @@ func TestAddSlashCommand(t *testing.T) {
 		assert.Nil(t, s)
 		assert.EqualError(t, err, "Empty Slash Command name")
 	})
+	t.Run("Slash Command with Invalid Name", func(t *testing.T) {
+		s, err := harm.AddSlashCommand("test/", "", func(h *Harmonia, i *Invocation) {})
+		assert.Nil(t, s)
+		assert.EqualError(t, err, "Slash Command name does not match with the CHAT_INPUT regex.")
+	})
 	t.Run("Correct Slash Command", func(t *testing.T) {
 		handlerFunc := func(h *Harmonia, i *Invocation) {}
 		s, err := harm.AddSlashCommand("test", "", handlerFunc)
