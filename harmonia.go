@@ -99,7 +99,7 @@ func (h *Harmonia) AuthorFromInteraction(i *discordgo.Interaction) (a *Author, e
 	return h.AuthorFromMember(i.Member)
 }
 
-// AuthoerFromMember returns an Author from a *discordgo.Member.
+// AuthorFromMember returns an Author from a *discordgo.Member.
 func (h *Harmonia) AuthorFromMember(member *discordgo.Member) (*Author, error) {
 	guild, err := h.Guild(member.GuildID)
 	if err != nil {
