@@ -33,7 +33,7 @@ func init() {
 func main() {
 	number := 0
 
-	h.AddSlashCommandInGuild("number", "Increase or decrease the internal number!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+	h.GuildAddSlashCommand("number", "Increase or decrease the internal number!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
 		imsg, err := h.RespondWithComponents(i, fmt.Sprintf("The current number is %v!", number), [][]discordgo.MessageComponent{
 			{
 				discordgo.Button{

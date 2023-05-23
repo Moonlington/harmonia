@@ -29,7 +29,7 @@ func init() {
 }
 
 func main() {
-	c, _ := h.AddSlashCommandWithSubcommandsInGuild("main", "Subcommands example", *GuildID)
+	c, _ := h.GuildAddSlashCommandWithSubcommands("main", "Subcommands example", *GuildID)
 	c.AddSubcommand("first", "First subcommand!", func(h *harmonia.Harmonia, i *harmonia.Invocation) {
 		h.Respond(i, "This is the first subcommand!")
 	})

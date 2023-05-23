@@ -61,8 +61,8 @@ func (h *Harmonia) AddSlashCommand(name, description string, handler func(h *Har
 	return
 }
 
-// AddSlashCommandInGuild does the same as AddSlashCommand, but only adds it for a specific GuildID.
-func (h *Harmonia) AddSlashCommandInGuild(name, description, GuildID string, handler func(h *Harmonia, i *Invocation)) (c *SlashCommand, err error) {
+// GuildAddSlashCommand does the same as AddSlashCommand, but only adds it for a specific GuildID.
+func (h *Harmonia) GuildAddSlashCommand(name, description, GuildID string, handler func(h *Harmonia, i *Invocation)) (c *SlashCommand, err error) {
 	c, err = h.AddSlashCommand(name, description, handler)
 	c.GuildID = GuildID
 	return
@@ -93,8 +93,8 @@ func (h *Harmonia) AddSlashCommandWithSubcommands(name, description string) (c *
 	return
 }
 
-// AddSlashCommandWithSubcommandsInGuild does the same as AddSlashCommandWithSubcommands, but only adds it for a specific GuildID.
-func (h *Harmonia) AddSlashCommandWithSubcommandsInGuild(name, description, GuildID string) (c *SlashCommand, err error) {
+// GuildAddSlashCommandWithSubcommands does the same as AddSlashCommandWithSubcommands, but only adds it for a specific GuildID.
+func (h *Harmonia) GuildAddSlashCommandWithSubcommands(name, description, GuildID string) (c *SlashCommand, err error) {
 	c, err = h.AddSlashCommandWithSubcommands(name, description)
 	c.GuildID = GuildID
 	return

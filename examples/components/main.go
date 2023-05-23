@@ -31,7 +31,7 @@ func init() {
 }
 
 func main() {
-	h.AddSlashCommandInGuild("buttons", "Gives you buttons to press!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+	h.GuildAddSlashCommand("buttons", "Gives you buttons to press!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
 		h.RespondWithComponents(i, "Look at all these buttons!", [][]discordgo.MessageComponent{
 			{
 				discordgo.Button{Label: "Say yes!", CustomID: "button1"},
@@ -52,7 +52,7 @@ func main() {
 		h.Respond(i, "What?")
 	})
 
-	h.AddSlashCommandInGuild("selection", "Gives you a selection of classes!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+	h.GuildAddSlashCommand("selection", "Gives you a selection of classes!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
 		min := 1
 		h.RespondWithComponents(i, "Choose a couple of classes!", [][]discordgo.MessageComponent{
 			{

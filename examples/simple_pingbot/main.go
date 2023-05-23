@@ -29,7 +29,7 @@ func init() {
 }
 
 func main() {
-	h.AddSlashCommandInGuild("ping", "Responds to the user with 'Pong!'", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+	h.GuildAddSlashCommand("ping", "Responds to the user with 'Pong!'", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
 		h.Respond(i, "Pong!")
 	})
 

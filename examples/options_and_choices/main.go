@@ -31,7 +31,7 @@ func init() {
 }
 
 func main() {
-	cmd, _ := h.AddSlashCommandInGuild("blep", "Send a random adorable animal photo", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+	cmd, _ := h.GuildAddSlashCommand("blep", "Send a random adorable animal photo", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
 		smol := ""
 		if i.GetOption("only_smol") != nil && i.GetOption("only_smol").BoolValue() {
 			smol = "baby "

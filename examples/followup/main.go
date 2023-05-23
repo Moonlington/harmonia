@@ -30,7 +30,7 @@ func init() {
 }
 
 func main() {
-	h.AddSlashCommandInGuild("ping", "Responds to the user with 'Pong!'... and then again after 5 seconds!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+	h.GuildAddSlashCommand("ping", "Responds to the user with 'Pong!'... and then again after 5 seconds!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
 		h.Respond(i, "Pong!")
 
 		time.Sleep(time.Second * 5)
