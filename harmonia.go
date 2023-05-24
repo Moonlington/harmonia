@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -86,7 +87,7 @@ func (h *Harmonia) AddSlashCommandWithSubcommands(name, description string) (c *
 		Name:        name,
 		Description: description,
 		GuildID:     "",
-		Handler:     &SubcommandHandler{Subcommands: make(map[string]*SubSlashCommand)},
+		Handler:     &CommandGroupHandler{Subcommands: make(map[string]*SlashSubcommand)},
 	}
 
 	h.Commands[name] = c
@@ -458,4 +459,30 @@ func ParseComponentMatrix(components [][]discordgo.MessageComponent) []discordgo
 		comp[i] = &discordgo.ActionsRow{Components: c}
 	}
 	return comp
+}
+
+// InteractionMessage describes a message sent as a follow-up or response to an Interaction.
+type InteractionMessage struct {
+	*discordgo.Message
+	Interaction *discordgo.Interaction
+	Channel     *discordgo.Channel
+	Guild       *discordgo.Guild
+}
+
+// An Author describes either a User or Member, depending if the message was sent in a Guild or DMs.
+type Author struct {
+	*discordgo.User
+	IsMember     bool
+	Guild        *discordgo.Guild
+	JoinedAt     time.Time
+	Nick         string
+	Deaf         bool
+	Mute         bool
+	Roles        []*discordgo.Role
+	PremiumSince *time.Time
+}
+
+// AuthorFromUser returns an Author from a *discordgo.User.
+func AuthorFromUser(user *discordgo.User) *Author {
+	return &Author{User: user, IsMember: false}
 }

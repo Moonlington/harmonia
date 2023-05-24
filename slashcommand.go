@@ -3,12 +3,11 @@ package harmonia
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-// A SlashCommand describes a slash command or application command.
+// A SlashCommand describes a slash command or CHAT_INPUT application command.
 type SlashCommand struct {
 	Name         string
 	Description  string
@@ -18,12 +17,12 @@ type SlashCommand struct {
 }
 
 // AddSubcommand adds a Subcommand to a SlashCommand, this can only be done if the SlashCommand was created as a Subcommand Group. See AddSlashCommandWithSubcommands for more information.
-func (s *SlashCommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SubSlashCommand, err error) {
+func (s *SlashCommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SlashSubcommand, err error) {
 	if name == "" {
 		return nil, errors.New("Empty Subcommand name")
 	}
 
-	ch, ok := s.Handler.(*SubcommandHandler)
+	ch, ok := s.Handler.(*CommandGroupHandler)
 	if !ok {
 		return nil, fmt.Errorf("Slash Command '%v' does not have a SubcommandHandler", s.Name)
 	}
@@ -32,7 +31,7 @@ func (s *SlashCommand) AddSubcommand(name, description string, handler func(h *H
 		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
 	}
 
-	sub = &SubSlashCommand{
+	sub = &SlashSubcommand{
 		Name:        name,
 		Description: description,
 		Handler:     &SingleCommandHandler{Handler: handler},
@@ -43,12 +42,12 @@ func (s *SlashCommand) AddSubcommand(name, description string, handler func(h *H
 }
 
 // AddSubcommand adds a Subcommand Group to a SlashCommand.
-func (s *SlashCommand) AddSubcommandGroup(name, description string) (sub *SubSlashCommand, err error) {
+func (s *SlashCommand) AddSubcommandGroup(name, description string) (sub *SlashSubcommand, err error) {
 	if name == "" {
 		return nil, errors.New("Empty Subcommand name")
 	}
 
-	ch, ok := s.Handler.(*SubcommandHandler)
+	ch, ok := s.Handler.(*CommandGroupHandler)
 	if !ok {
 		return nil, fmt.Errorf("Slash Command '%v' does not have a SubcommandHandler", s.Name)
 	}
@@ -57,19 +56,19 @@ func (s *SlashCommand) AddSubcommandGroup(name, description string) (sub *SubSla
 		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
 	}
 
-	sub = &SubSlashCommand{
+	sub = &SlashSubcommand{
 		Name:        name,
 		Description: description,
 		IsGroup:     true,
-		Handler:     &SubcommandHandler{Subcommands: make(map[string]*SubSlashCommand)},
+		Handler:     &CommandGroupHandler{Subcommands: make(map[string]*SlashSubcommand)},
 	}
 
 	ch.Subcommands[name] = sub
 	return
 }
 
-// SubSlashCommand describes a Subcommand or a Subcommand group to a SlashCommand.
-type SubSlashCommand struct {
+// SlashSubcommand describes a Subcommand or a Subcommand group to a SlashCommand.
+type SlashSubcommand struct {
 	Name        string
 	Description string
 	IsGroup     bool
@@ -77,12 +76,12 @@ type SubSlashCommand struct {
 }
 
 // AddSubcommand adds a Subcommand to a SubSlashCommand.
-func (s *SubSlashCommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SubSlashCommand, err error) {
+func (s *SlashSubcommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SlashSubcommand, err error) {
 	if name == "" {
 		return nil, errors.New("Empty Subcommand name")
 	}
 
-	ch, ok := s.Handler.(*SubcommandHandler)
+	ch, ok := s.Handler.(*CommandGroupHandler)
 	if !ok {
 		return nil, fmt.Errorf("Subcommand '%v' does not have a SubcommandHandler", s.Name)
 	}
@@ -91,7 +90,7 @@ func (s *SubSlashCommand) AddSubcommand(name, description string, handler func(h
 		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
 	}
 
-	sub = &SubSlashCommand{
+	sub = &SlashSubcommand{
 		Name:        name,
 		Description: description,
 		Handler:     &SingleCommandHandler{Handler: handler},
@@ -130,30 +129,4 @@ func (i *Invocation) GetOption(name string) *discordgo.ApplicationCommandInterac
 		return nil
 	}
 	return option
-}
-
-// InteractionMessage describes a message sent as a follow-up or response to an Interaction.
-type InteractionMessage struct {
-	*discordgo.Message
-	Interaction *discordgo.Interaction
-	Channel     *discordgo.Channel
-	Guild       *discordgo.Guild
-}
-
-// An Author describes either a User or Member, depending if the message was sent in a Guild or DMs.
-type Author struct {
-	*discordgo.User
-	IsMember     bool
-	Guild        *discordgo.Guild
-	JoinedAt     time.Time
-	Nick         string
-	Deaf         bool
-	Mute         bool
-	Roles        []*discordgo.Role
-	PremiumSince *time.Time
-}
-
-// AuthorFromUser returns an Author from a *discordgo.User.
-func AuthorFromUser(user *discordgo.User) *Author {
-	return &Author{User: user, IsMember: false}
 }

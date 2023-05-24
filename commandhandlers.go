@@ -34,14 +34,14 @@ func (s *SingleCommandHandler) GetOptions() []*discordgo.ApplicationCommandOptio
 	return o
 }
 
-// A SubcommandHandler describes the handler for a command with subcommands.
-type SubcommandHandler struct {
+// A CommandGroupHandler describes the handler for a command with subcommands.
+type CommandGroupHandler struct {
 	// Subcommands contains a map of SubSlashCommands
-	Subcommands map[string]*SubSlashCommand
+	Subcommands map[string]*SlashSubcommand
 }
 
 // Do handles the subcommands given to the SubcommandHandler
-func (s *SubcommandHandler) Do(h *Harmonia, i *Invocation) {
+func (s *CommandGroupHandler) Do(h *Harmonia, i *Invocation) {
 	options := i.options
 	if sc, ok := s.Subcommands[options[0].Name]; ok {
 		i.options = options[0].Options
@@ -50,7 +50,7 @@ func (s *SubcommandHandler) Do(h *Harmonia, i *Invocation) {
 }
 
 // GetOptions returns the subcommands parsed as ApplicationCommandOptions
-func (s *SubcommandHandler) GetOptions() []*discordgo.ApplicationCommandOption {
+func (s *CommandGroupHandler) GetOptions() []*discordgo.ApplicationCommandOption {
 	options := make([]*discordgo.ApplicationCommandOption, len(s.Subcommands))
 	i := 0
 	for _, sc := range s.Subcommands {
