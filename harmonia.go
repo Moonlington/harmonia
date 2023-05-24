@@ -10,7 +10,7 @@ import (
 )
 
 // VERSION of Harmonia, follows Semantic Versioning. (http://semver.org/)
-const VERSION = "0.5.3"
+const VERSION = "0.6.0"
 
 var slashCommandNameRegex = regexp.MustCompile(`^[-_\p{L}\p{N}]{1,32}$`)
 
