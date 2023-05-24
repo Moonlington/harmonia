@@ -15,7 +15,7 @@ import (
 var (
 	GuildID        = flag.String("guild", "", "Test guild ID. If not passed - bot registers commands globally")
 	BotToken       = flag.String("token", "", "Bot access token")
-	RemoveCommands = flag.Bool("rmcmd", true, "Remove all commands after shutdowning or not")
+	RemoveCommands = flag.Bool("rmcmd", true, "Remove all commands after shutdown or not")
 )
 
 var h *harmonia.Harmonia
@@ -34,7 +34,7 @@ func main() {
 	number := 0
 
 	h.GuildAddSlashCommand("number", "Increase or decrease the internal number!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		imsg, err := h.RespondWithComponents(i, fmt.Sprintf("The current number is %v!", number), [][]discordgo.MessageComponent{
+		msg, err := h.RespondWithComponents(i, fmt.Sprintf("The current number is %v!", number), [][]discordgo.MessageComponent{
 			{
 				discordgo.Button{
 					Label:    "Increase by 1",
@@ -58,7 +58,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		h.AddComponentHandlerToInteractionMessage(imsg, "n_increase", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
+		h.AddComponentHandlerToInteractionMessage(msg, "n_increase", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
 			if i.Author.ID == ci.Author.ID {
 				number++
 				h.EphemeralRespond(ci, fmt.Sprintf("The number has been increased to %v", number))
@@ -66,7 +66,7 @@ func main() {
 				h.EphemeralRespond(ci, "Only the original caller of the function can use it!")
 			}
 		})
-		h.AddComponentHandlerToInteractionMessage(imsg, "n_decrease", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
+		h.AddComponentHandlerToInteractionMessage(msg, "n_decrease", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
 			if i.Author.ID == ci.Author.ID {
 				number--
 				h.EphemeralRespond(ci, fmt.Sprintf("The number has been decreased to %v", number))
@@ -74,7 +74,7 @@ func main() {
 				h.EphemeralRespond(ci, "Only the original caller of the function can use it!")
 			}
 		})
-		h.AddComponentHandlerToInteractionMessage(imsg, "n_reset", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
+		h.AddComponentHandlerToInteractionMessage(msg, "n_reset", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
 			if i.Author.ID == ci.Author.ID {
 				number = 0
 				h.EphemeralRespond(ci, fmt.Sprintf("The number has been reset to %v", number))
