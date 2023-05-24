@@ -52,7 +52,7 @@ func main() {
 		h.Respond(i, "What?")
 	})
 
-	h.GuildAddSlashCommand("selection", "Gives you a selection of classes!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+	h.GuildAddSlashCommand("class", "Gives you a selection of classes!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
 		min := 1
 		h.RespondWithComponents(i, "Choose a couple of classes!", [][]discordgo.MessageComponent{
 			{
