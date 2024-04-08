@@ -484,5 +484,5 @@ type Author struct {
 
 // AuthorFromUser returns an Author from a *discordgo.User.
 func AuthorFromUser(user *discordgo.User) *Author {
-	return &Author{User: user, IsMember: false}
+	return &Author{User: user, IsMember: false, Nick: user.GlobalName}
 }
