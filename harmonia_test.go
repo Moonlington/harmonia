@@ -12,8 +12,8 @@ var (
 	h *Harmonia
 
 	envBotToken = os.Getenv("H_TOKEN")
-	envGuild    = os.Getenv("H_GUILD")
-	envAdmin    = os.Getenv("H_ADMIN")
+	// envGuild    = os.Getenv("H_GUILD")
+	// envAdmin    = os.Getenv("H_ADMIN")
 )
 
 func TestMain(m *testing.M) {

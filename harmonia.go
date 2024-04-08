@@ -40,15 +40,15 @@ func New(token string) (h *Harmonia, err error) {
 // AddSlashCommand adds a slash command to Harmonia.
 func (h *Harmonia) AddSlashCommand(name, description string, handler func(h *Harmonia, i *Invocation)) (c *SlashCommand, err error) {
 	if name == "" {
-		return nil, errors.New("Empty Slash Command name")
+		return nil, errors.New("empty Slash Command name")
 	}
 
 	if !slashCommandNameRegex.MatchString(name) {
-		return nil, errors.New("Slash Command name does not match with the CHAT_INPUT regex.")
+		return nil, errors.New("name does not match with the CHAT_INPUT regex")
 	}
 
 	if _, ok := h.Commands[name]; ok {
-		return nil, fmt.Errorf("Slash Command '%v' already exists", name)
+		return nil, fmt.Errorf("command '%v' already exists", name)
 	}
 
 	c = &SlashCommand{
@@ -72,15 +72,15 @@ func (h *Harmonia) GuildAddSlashCommand(name, description, GuildID string, handl
 // AddSlashCommandWithSubcommands adds a subcommand group, it itself has no handler, but you can use the returned SlashCommand to add Subcommands to the SlashCommand.
 func (h *Harmonia) AddSlashCommandWithSubcommands(name, description string) (c *SlashCommand, err error) {
 	if name == "" {
-		return nil, errors.New("Empty Slash Command name")
+		return nil, errors.New("empty Slash Command name")
 	}
 
 	if !slashCommandNameRegex.MatchString(name) {
-		return nil, errors.New("Slash Command name does not match with the CHAT_INPUT regex.")
+		return nil, errors.New("name does not match with the CHAT_INPUT regex")
 	}
 
 	if _, ok := h.Commands[name]; ok {
-		return nil, fmt.Errorf("Slash Command '%v' already exists", name)
+		return nil, fmt.Errorf("command '%v' already exists", name)
 	}
 
 	c = &SlashCommand{
@@ -300,7 +300,7 @@ func (h *Harmonia) DeleteFollowup(f *InteractionMessage) error {
 // I suggest this is only used for globally used components, and not for components used on a message by message basis. See AddComponentHandlerToInteractionMessage
 func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia, i *Invocation)) error {
 	if customID == "" {
-		return errors.New("Empty CustomID")
+		return errors.New("empty CustomID")
 	}
 
 	if _, ok := h.ComponentHandlers[customID]; ok {
@@ -315,13 +315,13 @@ func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia
 // This is done by prepending the InteractionMessage's ID to the customID. Harmonia will do the heavy lifting from there.
 func (h *Harmonia) AddComponentHandlerToInteractionMessage(f *InteractionMessage, customID string, handler func(h *Harmonia, i *Invocation)) error {
 	if customID == "" {
-		return errors.New("Empty CustomID")
+		return errors.New("empty CustomID")
 	}
 
 	followupcustomID := fmt.Sprintf("%v-%v", f.ID, customID)
 
 	if _, ok := h.ComponentHandlers[followupcustomID]; ok {
-		return fmt.Errorf("CustomID '%v' already exists on Followup '%v'", customID, f.ID)
+		return fmt.Errorf("customID '%v' already exists on Followup '%v'", customID, f.ID)
 	}
 
 	h.ComponentHandlers[followupcustomID] = handler
@@ -331,7 +331,7 @@ func (h *Harmonia) AddComponentHandlerToInteractionMessage(f *InteractionMessage
 // RemoveComponentHandler removes a component handler.
 func (h *Harmonia) RemoveComponentHandler(customID string) error {
 	if _, ok := h.ComponentHandlers[customID]; !ok {
-		return fmt.Errorf("CustomID '%v' not found", customID)
+		return fmt.Errorf("customID '%v' not found", customID)
 	}
 	delete(h.ComponentHandlers, customID)
 	return nil
@@ -341,7 +341,7 @@ func (h *Harmonia) RemoveComponentHandler(customID string) error {
 func (h *Harmonia) RemoveComponentHandlerFromInteractionMessage(f *InteractionMessage, customID string) error {
 	followupcustomID := fmt.Sprintf("%v-%v", f.ID, customID)
 	if _, ok := h.ComponentHandlers[followupcustomID]; !ok {
-		return fmt.Errorf("CustomID '%v' not found on Followup '%v'", customID, f.ID)
+		return fmt.Errorf("customID '%v' not found on Followup '%v'", customID, f.ID)
 	}
 	delete(h.ComponentHandlers, followupcustomID)
 	return nil
@@ -428,11 +428,11 @@ func (h *Harmonia) Run() error {
 func (h *Harmonia) RemoveCommand(name string) error {
 	command, ok := h.Commands[name]
 	if !ok {
-		return fmt.Errorf("Command '%v' was not found", name)
+		return fmt.Errorf("command '%v' was not found", name)
 	}
 
 	if command.registration == nil {
-		return fmt.Errorf("Command '%v' was not registered", name)
+		return fmt.Errorf("command '%v' was not registered", name)
 	}
 
 	err := h.ApplicationCommandDelete(h.State.User.ID, command.GuildID, command.registration.ID)

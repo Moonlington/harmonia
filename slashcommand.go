@@ -19,16 +19,16 @@ type SlashCommand struct {
 // AddSubcommand adds a Subcommand to a SlashCommand, this can only be done if the SlashCommand was created as a Subcommand Group. See AddSlashCommandWithSubcommands for more information.
 func (s *SlashCommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SlashSubcommand, err error) {
 	if name == "" {
-		return nil, errors.New("Empty Subcommand name")
+		return nil, errors.New("empty Subcommand name")
 	}
 
 	ch, ok := s.Handler.(*CommandGroupHandler)
 	if !ok {
-		return nil, fmt.Errorf("Slash Command '%v' does not have a SubcommandHandler", s.Name)
+		return nil, fmt.Errorf("command '%v' does not have a SubcommandHandler", s.Name)
 	}
 
 	if _, ok := ch.Subcommands[name]; ok {
-		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
+		return nil, fmt.Errorf("subcommand '%v' already exists", name)
 	}
 
 	sub = &SlashSubcommand{
@@ -44,16 +44,16 @@ func (s *SlashCommand) AddSubcommand(name, description string, handler func(h *H
 // AddSubcommand adds a Subcommand Group to a SlashCommand.
 func (s *SlashCommand) AddSubcommandGroup(name, description string) (sub *SlashSubcommand, err error) {
 	if name == "" {
-		return nil, errors.New("Empty Subcommand name")
+		return nil, errors.New("empty Subcommand name")
 	}
 
 	ch, ok := s.Handler.(*CommandGroupHandler)
 	if !ok {
-		return nil, fmt.Errorf("Slash Command '%v' does not have a SubcommandHandler", s.Name)
+		return nil, fmt.Errorf("command '%v' does not have a SubcommandHandler", s.Name)
 	}
 
 	if _, ok := ch.Subcommands[name]; ok {
-		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
+		return nil, fmt.Errorf("subcommand '%v' already exists", name)
 	}
 
 	sub = &SlashSubcommand{
@@ -78,16 +78,16 @@ type SlashSubcommand struct {
 // AddSubcommand adds a Subcommand to a SubSlashCommand.
 func (s *SlashSubcommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SlashSubcommand, err error) {
 	if name == "" {
-		return nil, errors.New("Empty Subcommand name")
+		return nil, errors.New("empty Subcommand name")
 	}
 
 	ch, ok := s.Handler.(*CommandGroupHandler)
 	if !ok {
-		return nil, fmt.Errorf("Subcommand '%v' does not have a SubcommandHandler", s.Name)
+		return nil, fmt.Errorf("subcommand '%v' does not have a SubcommandHandler", s.Name)
 	}
 
 	if _, ok := ch.Subcommands[name]; ok {
-		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
+		return nil, fmt.Errorf("subcommand '%v' already exists", name)
 	}
 
 	sub = &SlashSubcommand{
