@@ -252,6 +252,7 @@ func (h *Harmonia) Run() error {
 					Channel:     channel,
 					Author:      author,
 					options:     options,
+					targetID:    i.ApplicationCommandData().TargetID,
 				})
 			}
 			return
