@@ -34,9 +34,12 @@ func TestAddChoice(t *testing.T) {
 
 	assert.Equal(t, 0, len(o.Choices))
 
-	c := o.AddChoice("test", "5")
+	o.AddChoice("test", "5")
 
 	assert.NotNil(t, o.Choices)
 	assert.Equal(t, 1, len(o.Choices))
-	assert.Equal(t, o.Choices[0], c)
+	assert.Equal(t, &discordgo.ApplicationCommandOptionChoice{
+		Name:  "test",
+		Value: "5",
+	}, o.Choices[0])
 }
