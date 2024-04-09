@@ -8,7 +8,7 @@ import (
 )
 
 // VERSION of Harmonia, follows Semantic Versioning. (http://semver.org/)
-const VERSION = "0.7.1"
+const VERSION = "0.7.2"
 
 // A Harmonia represents a connection to the Discord API and contains the slash commands and component handlers used by Harmonia.
 type Harmonia struct {
