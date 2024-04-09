@@ -67,9 +67,11 @@ func (s *UserCommand) getRegistration() *discordgo.ApplicationCommand {
 	}
 
 	return &discordgo.ApplicationCommand{
-		Name:    s.name,
-		GuildID: s.guildID,
-		Type:    discordgo.UserApplicationCommand,
+		Name:                     s.name,
+		GuildID:                  s.guildID,
+		DMPermission:             &s.dmPermission,
+		DefaultMemberPermissions: &s.defaultPermissions,
+		Type:                     discordgo.UserApplicationCommand,
 	}
 }
 

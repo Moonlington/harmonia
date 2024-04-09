@@ -93,11 +93,13 @@ func (s *SlashCommand) getRegistration() *discordgo.ApplicationCommand {
 	}
 
 	return &discordgo.ApplicationCommand{
-		Name:        s.name,
-		Description: s.description,
-		GuildID:     s.guildID,
-		Options:     options,
-		Type:        discordgo.ChatApplicationCommand,
+		Name:                     s.name,
+		Description:              s.description,
+		GuildID:                  s.guildID,
+		Options:                  options,
+		DMPermission:             &s.dmPermission,
+		DefaultMemberPermissions: &s.defaultPermissions,
+		Type:                     discordgo.ChatApplicationCommand,
 	}
 }
 
