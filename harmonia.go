@@ -3,8 +3,6 @@ package harmonia
 import (
 	"errors"
 	"fmt"
-	"regexp"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -12,13 +10,11 @@ import (
 // VERSION of Harmonia, follows Semantic Versioning. (http://semver.org/)
 const VERSION = "0.6.0"
 
-var slashCommandNameRegex = regexp.MustCompile(`^[-_\p{L}\p{N}]{1,32}$`)
-
 // A Harmonia represents a connection to the Discord API and contains the slash commands and component handlers used by Harmonia.
 type Harmonia struct {
 	*discordgo.Session
-	Commands          map[string]*SlashCommand
-	ComponentHandlers map[string]func(h *Harmonia, i *Invocation)
+	Commands          map[string]CommandHandler
+	ComponentHandlers map[string]CommandFunc
 }
 
 // New creates a new Discord session with the provided token and wraps the Harmonia struct around it.
@@ -30,130 +26,22 @@ func New(token string) (h *Harmonia, err error) {
 
 	h = &Harmonia{
 		Session:           s,
-		Commands:          make(map[string]*SlashCommand),
-		ComponentHandlers: make(map[string]func(h *Harmonia, i *Invocation)),
+		Commands:          make(map[string]CommandHandler),
+		ComponentHandlers: make(map[string]CommandFunc),
 	}
 
 	return h, err
 }
 
-// AddSlashCommand adds a slash command to Harmonia.
-func (h *Harmonia) AddSlashCommand(name, description string, handler func(h *Harmonia, i *Invocation)) (c *SlashCommand, err error) {
-	if name == "" {
-		return nil, errors.New("empty Slash Command name")
-	}
-
-	if !slashCommandNameRegex.MatchString(name) {
-		return nil, errors.New("name does not match with the CHAT_INPUT regex")
-	}
-
+// AddCommand adds a command to Harmonia.
+func (h *Harmonia) AddCommand(command CommandHandler) (err error) {
+	name := command.GetName()
 	if _, ok := h.Commands[name]; ok {
-		return nil, fmt.Errorf("command '%v' already exists", name)
+		return fmt.Errorf("command '%v' already exists", name)
 	}
 
-	c = &SlashCommand{
-		Name:        name,
-		Description: description,
-		GuildID:     "",
-		Handler:     &SingleCommandHandler{Handler: handler},
-	}
-
-	h.Commands[name] = c
+	h.Commands[name] = command
 	return
-}
-
-// GuildAddSlashCommand does the same as AddSlashCommand, but only adds it for a specific GuildID.
-func (h *Harmonia) GuildAddSlashCommand(name, description, GuildID string, handler func(h *Harmonia, i *Invocation)) (c *SlashCommand, err error) {
-	c, err = h.AddSlashCommand(name, description, handler)
-	c.GuildID = GuildID
-	return
-}
-
-// AddSlashCommandWithSubcommands adds a subcommand group, it itself has no handler, but you can use the returned SlashCommand to add Subcommands to the SlashCommand.
-func (h *Harmonia) AddSlashCommandWithSubcommands(name, description string) (c *SlashCommand, err error) {
-	if name == "" {
-		return nil, errors.New("empty Slash Command name")
-	}
-
-	if !slashCommandNameRegex.MatchString(name) {
-		return nil, errors.New("name does not match with the CHAT_INPUT regex")
-	}
-
-	if _, ok := h.Commands[name]; ok {
-		return nil, fmt.Errorf("command '%v' already exists", name)
-	}
-
-	c = &SlashCommand{
-		Name:        name,
-		Description: description,
-		GuildID:     "",
-		Handler:     &CommandGroupHandler{Subcommands: make(map[string]*SlashSubcommand)},
-	}
-
-	h.Commands[name] = c
-	return
-}
-
-// GuildAddSlashCommandWithSubcommands does the same as AddSlashCommandWithSubcommands, but only adds it for a specific GuildID.
-func (h *Harmonia) GuildAddSlashCommandWithSubcommands(name, description, GuildID string) (c *SlashCommand, err error) {
-	c, err = h.AddSlashCommandWithSubcommands(name, description)
-	c.GuildID = GuildID
-	return
-}
-
-// AuthorFromInteraction uses the information obtained from the Interaction to create an Author.
-func (h *Harmonia) AuthorFromInteraction(i *discordgo.Interaction) (a *Author, err error) {
-	if i.Member == nil {
-		return AuthorFromUser(i.User), nil
-	}
-
-	i.Member.GuildID = i.GuildID
-	return h.AuthorFromMember(i.Member)
-}
-
-// AuthorFromMember returns an Author from a *discordgo.Member.
-func (h *Harmonia) AuthorFromMember(member *discordgo.Member) (*Author, error) {
-	guild, err := h.Guild(member.GuildID)
-	if err != nil {
-		return nil, err
-	}
-
-	roles, err := h.RolesFromMember(member)
-	if err != nil {
-		return nil, err
-	}
-
-	a := &Author{User: member.User,
-		IsMember:     true,
-		Guild:        guild,
-		JoinedAt:     member.JoinedAt,
-		Nick:         member.Nick,
-		Deaf:         member.Deaf,
-		Mute:         member.Mute,
-		Roles:        roles,
-		PremiumSince: member.PremiumSince,
-	}
-	a.Avatar = member.Avatar
-	return a, nil
-}
-
-// RolesFromMember returns a slice of *discordgo.Role from a *discordgo.Member.
-func (h *Harmonia) RolesFromMember(member *discordgo.Member) ([]*discordgo.Role, error) {
-	guildroles, err := h.GuildRoles(member.GuildID)
-	if err != nil {
-		return nil, err
-	}
-
-	roles := make([]*discordgo.Role, 0, len(member.Roles))
-	for _, roleid := range member.Roles {
-		for _, role := range guildroles {
-			if role.ID == roleid {
-				roles = append(roles, role)
-			}
-		}
-	}
-
-	return roles, nil
 }
 
 func (h *Harmonia) interactionMessageFromMessage(m *discordgo.Message, i *discordgo.Interaction) *InteractionMessage {
@@ -298,7 +186,7 @@ func (h *Harmonia) DeleteFollowup(f *InteractionMessage) error {
 
 // AddComponentHandler adds a handler for a component.
 // I suggest this is only used for globally used components, and not for components used on a message by message basis. See AddComponentHandlerToInteractionMessage
-func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia, i *Invocation)) error {
+func (h *Harmonia) AddComponentHandler(customID string, handler CommandFunc) error {
 	if customID == "" {
 		return errors.New("empty CustomID")
 	}
@@ -313,7 +201,7 @@ func (h *Harmonia) AddComponentHandler(customID string, handler func(h *Harmonia
 
 // AddComponentHandlerToInteractionMessage adds a handler for a component, but will be handled only on its original Interaction.
 // This is done by prepending the InteractionMessage's ID to the customID. Harmonia will do the heavy lifting from there.
-func (h *Harmonia) AddComponentHandlerToInteractionMessage(f *InteractionMessage, customID string, handler func(h *Harmonia, i *Invocation)) error {
+func (h *Harmonia) AddComponentHandlerToInteractionMessage(f *InteractionMessage, customID string, handler CommandFunc) error {
 	if customID == "" {
 		return errors.New("empty CustomID")
 	}
@@ -352,14 +240,13 @@ func (h *Harmonia) Run() error {
 	h.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
-			if slashCommand, ok := h.Commands[i.ApplicationCommandData().Name]; ok {
-				//TODO: Error checking for each AND work out some way to use State in this.
-				guild, _ := h.Guild(i.GuildID)
-				channel, _ := h.Channel(i.ChannelID)
-				author, _ := h.AuthorFromInteraction(i.Interaction)
+			if command, ok := h.Commands[i.ApplicationCommandData().Name]; ok {
+				guild, _ := h.State.Guild(i.GuildID)
+				channel, _ := h.State.Channel(i.ChannelID)
+				author, _ := AuthorFromInteraction(h, i.Interaction)
 				options := i.ApplicationCommandData().Options
 
-				slashCommand.Handler.Do(h, &Invocation{
+				command.Do(h, &Invocation{
 					Interaction: i.Interaction,
 					Guild:       guild,
 					Channel:     channel,
@@ -370,9 +257,9 @@ func (h *Harmonia) Run() error {
 			return
 		case discordgo.InteractionMessageComponent:
 			if componentHandler, ok := h.ComponentHandlers[i.MessageComponentData().CustomID]; ok {
-				guild, _ := h.Guild(i.GuildID)
-				channel, _ := h.Channel(i.ChannelID)
-				author, _ := h.AuthorFromInteraction(i.Interaction)
+				guild, _ := h.State.Guild(i.GuildID)
+				channel, _ := h.State.Channel(i.ChannelID)
+				author, _ := AuthorFromInteraction(h, i.Interaction)
 				values := i.MessageComponentData().Values
 
 				componentHandler(h, &Invocation{
@@ -390,7 +277,7 @@ func (h *Harmonia) Run() error {
 			if componentHandler, ok := h.ComponentHandlers[followupcustomID]; ok {
 				guild, _ := h.Guild(i.GuildID)
 				channel, _ := h.Channel(i.ChannelID)
-				author, _ := h.AuthorFromInteraction(i.Interaction)
+				author, _ := AuthorFromInteraction(h, i.Interaction)
 				values := i.MessageComponentData().Values
 
 				componentHandler(h, &Invocation{
@@ -411,15 +298,12 @@ func (h *Harmonia) Run() error {
 	}
 
 	for _, command := range h.Commands {
-		cmd, err := h.ApplicationCommandCreate(h.State.User.ID, command.GuildID, &discordgo.ApplicationCommand{
-			Name:        command.Name,
-			Description: command.Description,
-			Options:     command.Handler.GetOptions(),
-		})
+		data := command.getRegistration()
+		registration, err := h.ApplicationCommandCreate(h.State.User.ID, data.GuildID, data)
 		if err != nil {
 			return err
 		}
-		command.registration = cmd
+		command.setRegistration(registration)
 	}
 	return nil
 }
@@ -431,11 +315,13 @@ func (h *Harmonia) RemoveCommand(name string) error {
 		return fmt.Errorf("command '%v' was not found", name)
 	}
 
-	if command.registration == nil {
+	registration := command.getRegistration()
+
+	if registration.ID == "" {
 		return fmt.Errorf("command '%v' was not registered", name)
 	}
 
-	err := h.ApplicationCommandDelete(h.State.User.ID, command.GuildID, command.registration.ID)
+	err := h.ApplicationCommandDelete(h.State.User.ID, registration.GuildID, registration.ID)
 	if err != nil {
 		return err
 	}
@@ -446,8 +332,8 @@ func (h *Harmonia) RemoveCommand(name string) error {
 
 // RemoveAllCommands does removes all registered commands on this Harmonia instance and from the Discord API.
 func (h *Harmonia) RemoveAllCommands() error {
-	for _, command := range h.Commands {
-		h.RemoveCommand(command.Name)
+	for name := range h.Commands {
+		h.RemoveCommand(name)
 	}
 	return nil
 }
@@ -467,22 +353,4 @@ type InteractionMessage struct {
 	Interaction *discordgo.Interaction
 	Channel     *discordgo.Channel
 	Guild       *discordgo.Guild
-}
-
-// An Author describes either a User or Member, depending if the message was sent in a Guild or DMs.
-type Author struct {
-	*discordgo.User
-	IsMember     bool
-	Guild        *discordgo.Guild
-	JoinedAt     time.Time
-	Nick         string
-	Deaf         bool
-	Mute         bool
-	Roles        []*discordgo.Role
-	PremiumSince *time.Time
-}
-
-// AuthorFromUser returns an Author from a *discordgo.User.
-func AuthorFromUser(user *discordgo.User) *Author {
-	return &Author{User: user, IsMember: false, Nick: user.GlobalName}
 }
