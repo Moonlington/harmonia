@@ -12,7 +12,7 @@ type GroupSlashCommand struct {
 	description        string
 	guildID            string
 	dmPermission       bool
-	defaultPermissions int64
+	defaultPermissions *int64
 
 	subcommands map[string]CommandHandler
 
@@ -73,7 +73,7 @@ func (s *GroupSlashCommand) WithDMPermission(isAllowed bool) *GroupSlashCommand 
 }
 
 // WithDefaultPermissions changes the DefaultPermissions of the GroupSlashCommand and returns itself, so that it can be chained.
-func (s *GroupSlashCommand) WithDefaultPermissions(defaultPermissions int64) *GroupSlashCommand {
+func (s *GroupSlashCommand) WithDefaultPermissions(defaultPermissions *int64) *GroupSlashCommand {
 	s.defaultPermissions = defaultPermissions
 	return s
 }
@@ -120,7 +120,7 @@ func (s *GroupSlashCommand) getRegistration() *discordgo.ApplicationCommand {
 		GuildID:                  s.guildID,
 		Options:                  options,
 		DMPermission:             &s.dmPermission,
-		DefaultMemberPermissions: &s.defaultPermissions,
+		DefaultMemberPermissions: s.defaultPermissions,
 		Type:                     discordgo.ChatApplicationCommand,
 	}
 }

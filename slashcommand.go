@@ -15,7 +15,7 @@ type SlashCommand struct {
 	description        string
 	guildID            string
 	dmPermission       bool
-	defaultPermissions int64
+	defaultPermissions *int64
 
 	commandFunc CommandFunc
 	options     []*Option
@@ -57,7 +57,7 @@ func (s *SlashCommand) WithDMPermission(isAllowed bool) *SlashCommand {
 }
 
 // WithDefaultPermissions changes the DefaultPermissions of the SlashCommand and returns itself, so that it can be chained.
-func (s *SlashCommand) WithDefaultPermissions(defaultPermissions int64) *SlashCommand {
+func (s *SlashCommand) WithDefaultPermissions(defaultPermissions *int64) *SlashCommand {
 	s.defaultPermissions = defaultPermissions
 	return s
 }
@@ -98,7 +98,7 @@ func (s *SlashCommand) getRegistration() *discordgo.ApplicationCommand {
 		GuildID:                  s.guildID,
 		Options:                  options,
 		DMPermission:             &s.dmPermission,
-		DefaultMemberPermissions: &s.defaultPermissions,
+		DefaultMemberPermissions: s.defaultPermissions,
 		Type:                     discordgo.ChatApplicationCommand,
 	}
 }

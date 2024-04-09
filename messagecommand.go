@@ -11,7 +11,7 @@ type MessageCommand struct {
 	name               string
 	guildID            string
 	dmPermission       bool
-	defaultPermissions int64
+	defaultPermissions *int64
 
 	commandFunc CommandFunc
 
@@ -42,7 +42,7 @@ func (s *MessageCommand) WithDMPermission(isAllowed bool) *MessageCommand {
 }
 
 // WithDefaultPermissions changes the DefaultPermissions of the MessageCommand and returns itself, so that it can be chained.
-func (s *MessageCommand) WithDefaultPermissions(defaultPermissions int64) *MessageCommand {
+func (s *MessageCommand) WithDefaultPermissions(defaultPermissions *int64) *MessageCommand {
 	s.defaultPermissions = defaultPermissions
 	return s
 }
@@ -70,7 +70,7 @@ func (s *MessageCommand) getRegistration() *discordgo.ApplicationCommand {
 		Name:                     s.name,
 		GuildID:                  s.guildID,
 		DMPermission:             &s.dmPermission,
-		DefaultMemberPermissions: &s.defaultPermissions,
+		DefaultMemberPermissions: s.defaultPermissions,
 		Type:                     discordgo.MessageApplicationCommand,
 	}
 }

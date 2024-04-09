@@ -11,7 +11,7 @@ type UserCommand struct {
 	name               string
 	guildID            string
 	dmPermission       bool
-	defaultPermissions int64
+	defaultPermissions *int64
 
 	commandFunc CommandFunc
 
@@ -42,7 +42,7 @@ func (s *UserCommand) WithDMPermission(isAllowed bool) *UserCommand {
 }
 
 // WithDefaultPermissions changes the DefaultPermissions of the UserCommand and returns itself, so that it can be chained.
-func (s *UserCommand) WithDefaultPermissions(defaultPermissions int64) *UserCommand {
+func (s *UserCommand) WithDefaultPermissions(defaultPermissions *int64) *UserCommand {
 	s.defaultPermissions = defaultPermissions
 	return s
 }
@@ -70,7 +70,7 @@ func (s *UserCommand) getRegistration() *discordgo.ApplicationCommand {
 		Name:                     s.name,
 		GuildID:                  s.guildID,
 		DMPermission:             &s.dmPermission,
-		DefaultMemberPermissions: &s.defaultPermissions,
+		DefaultMemberPermissions: s.defaultPermissions,
 		Type:                     discordgo.UserApplicationCommand,
 	}
 }
