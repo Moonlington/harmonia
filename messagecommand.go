@@ -42,8 +42,8 @@ func (s *MessageCommand) WithDMPermission(isAllowed bool) *MessageCommand {
 }
 
 // WithDefaultPermissions changes the DefaultPermissions of the MessageCommand and returns itself, so that it can be chained.
-func (s *MessageCommand) WithDefaultPermissions(defaultPermissions *int64) *MessageCommand {
-	s.defaultPermissions = defaultPermissions
+func (s *MessageCommand) WithDefaultPermissions(defaultPermissions int64) *MessageCommand {
+	s.defaultPermissions = &defaultPermissions
 	return s
 }
 
