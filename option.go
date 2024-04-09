@@ -31,7 +31,7 @@ func (o *Option) WithDescription(description string) *Option {
 	return o
 }
 
-// IsRequired sets the requirement of the Option to true and returns itself, so that it can be chained.
+// IsRequired sets the requirement of the Option to true and returns itself, so that it can be chained. By default an Option is not required.
 func (o *Option) IsRequired() *Option {
 	o.Required = true
 	return o

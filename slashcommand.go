@@ -11,9 +11,11 @@ var slashCommandNameRegex = regexp.MustCompile(`^[-_\p{L}\p{N}]{1,32}$`)
 
 // A SlashCommand describes a slash command or CHAT_INPUT application command.
 type SlashCommand struct {
-	name        string
-	description string
-	guildID     string
+	name               string
+	description        string
+	guildID            string
+	dmPermission       bool
+	defaultPermissions int64
 
 	commandFunc CommandFunc
 	options     []*Option
@@ -45,6 +47,18 @@ func (s *SlashCommand) WithDescription(description string) *SlashCommand {
 // WithGuildID changes the guildID of the SlashCommand and returns itself, so that it can be chained.
 func (s *SlashCommand) WithGuildID(guildID string) *SlashCommand {
 	s.guildID = guildID
+	return s
+}
+
+// WithDMPermission changes the DM Permission of the SlashCommand and returns itself, so that it can be chained.
+func (s *SlashCommand) WithDMPermission(isAllowed bool) *SlashCommand {
+	s.dmPermission = isAllowed
+	return s
+}
+
+// WithDefaultPermissions changes the DefaultPermissions of the SlashCommand and returns itself, so that it can be chained.
+func (s *SlashCommand) WithDefaultPermissions(defaultPermissions int64) *SlashCommand {
+	s.defaultPermissions = defaultPermissions
 	return s
 }
 

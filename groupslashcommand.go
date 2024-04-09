@@ -7,9 +7,11 @@ import (
 )
 
 type GroupSlashCommand struct {
-	name        string
-	description string
-	guildID     string
+	name               string
+	description        string
+	guildID            string
+	dmPermission       bool
+	defaultPermissions int64
 
 	subcommands map[string]CommandHandler
 
@@ -60,6 +62,18 @@ func (s *GroupSlashCommand) WithSubCommands(subcommands ...CommandHandler) *Grou
 
 		s.subcommands[name] = command
 	}
+	return s
+}
+
+// WithDMPermission changes the DM Permission of the GroupSlashCommand and returns itself, so that it can be chained.
+func (s *GroupSlashCommand) WithDMPermission(isAllowed bool) *GroupSlashCommand {
+	s.dmPermission = isAllowed
+	return s
+}
+
+// WithDefaultPermissions changes the DefaultPermissions of the GroupSlashCommand and returns itself, so that it can be chained.
+func (s *GroupSlashCommand) WithDefaultPermissions(defaultPermissions int64) *GroupSlashCommand {
+	s.defaultPermissions = defaultPermissions
 	return s
 }
 
