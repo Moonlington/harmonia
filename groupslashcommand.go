@@ -6,6 +6,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// GroupSlashCommand describes a group of slash commands.
 type GroupSlashCommand struct {
 	name               string
 	description        string
