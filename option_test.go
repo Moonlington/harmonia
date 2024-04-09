@@ -14,7 +14,9 @@ func TestAddOption(t *testing.T) {
 	assert.Equal(t, 0, len(s.options))
 
 	assert.Panics(t, func() { NewOption("", discordgo.ApplicationCommandOptionChannel) })
-	opt := NewOption("testOption", discordgo.ApplicationCommandOptionBoolean).WithDescription("Testing Option").WithRequired(true)
+	opt := NewOption("testOption", discordgo.ApplicationCommandOptionBoolean).
+		WithDescription("Testing Option").
+		IsRequired()
 	s.WithOptions(opt)
 
 	assert.NotNil(t, opt)
