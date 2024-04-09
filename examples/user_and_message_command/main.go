@@ -8,7 +8,6 @@ import (
 	"os/signal"
 
 	"github.com/Moonlington/harmonia"
-	"github.com/bwmarrin/discordgo"
 )
 
 // Bot parameters
@@ -31,29 +30,19 @@ func init() {
 }
 
 func main() {
-	opt := harmonia.NewOption("animal", discordgo.ApplicationCommandOptionString).
-		WithDescription("The type of animal").
-		IsRequired().
-		AddChoice("Dog", "dog").
-		AddChoice("Cat", "dog").
-		AddChoice("Penguin", "penguin")
-
-	opt2 := harmonia.NewOption("only_smol", discordgo.ApplicationCommandOptionBoolean).
-		WithDescription("Wether to show only baby animals")
-
-	cmd := harmonia.NewSlashCommand("blep").
-		WithDescription("Send an adorable animal photo").
+	h.AddCommand(harmonia.NewUserCommand("Ping this guy.").
 		WithGuildID(*GuildID).
-		WithOptions(opt, opt2).
 		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-			smol := ""
-			if i.GetOption("only_smol") != nil && i.GetOption("only_smol").BoolValue() {
-				smol = "baby "
-			}
-			h.Respond(i, fmt.Sprintf("Sending picture of a %v%v!", smol, i.GetOption("animal").StringValue()))
-		})
+			target, _ := i.TargetAuthor(h)
+			h.Respond(i, fmt.Sprintf("Ping %s!", target.Mention()))
+		}))
 
-	h.AddCommand(cmd)
+	h.AddCommand(harmonia.NewMessageCommand("Who sent this message?").
+		WithGuildID(*GuildID).
+		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+			target, _ := i.TargetMessage(h)
+			h.Respond(i, fmt.Sprintf("%s wrote this!", target.Author.Mention()))
+		}))
 
 	err := h.Run()
 	if err != nil {

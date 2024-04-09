@@ -8,25 +8,29 @@ import (
 )
 
 func TestAddOption(t *testing.T) {
-	s := &SlashCommand{Handler: &SingleCommandHandler{}}
 
-	assert.Equal(t, 0, len(s.Handler.GetOptions()))
+	s := NewSlashCommand("test")
 
-	o, err := s.AddOption("testOption", "Testing Option", true, discordgo.ApplicationCommandOptionBoolean)
+	assert.Equal(t, 0, len(s.options))
 
-	assert.Nil(t, err)
-	assert.NotNil(t, o)
+	assert.Panics(t, func() { NewOption("", discordgo.ApplicationCommandOptionChannel) })
+	opt := NewOption("testOption", discordgo.ApplicationCommandOptionBoolean).
+		WithDescription("Testing Option").
+		IsRequired()
+	s.WithOptions(opt)
+
+	assert.NotNil(t, opt)
 	assert.Equal(t, &Option{&discordgo.ApplicationCommandOption{
 		Type:        discordgo.ApplicationCommandOptionBoolean,
 		Name:        "testOption",
 		Description: "Testing Option",
 		Required:    true,
-	}}, o)
-	assert.Equal(t, 1, len(s.Handler.GetOptions()))
+	}}, opt)
+	assert.Equal(t, 1, len(s.options))
 }
 
 func TestAddChoice(t *testing.T) {
-	o := &Option{&discordgo.ApplicationCommandOption{}}
+	o := NewOption("test", discordgo.ApplicationCommandOptionString)
 
 	assert.Equal(t, 0, len(o.Choices))
 
@@ -34,4 +38,8 @@ func TestAddChoice(t *testing.T) {
 
 	assert.NotNil(t, o.Choices)
 	assert.Equal(t, 1, len(o.Choices))
+	assert.Equal(t, &discordgo.ApplicationCommandOptionChoice{
+		Name:  "test",
+		Value: "5",
+	}, o.Choices[0])
 }

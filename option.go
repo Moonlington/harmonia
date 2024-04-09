@@ -1,8 +1,7 @@
 package harmonia
 
 import (
-	"errors"
-	"fmt"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -12,40 +11,38 @@ type Option struct {
 	*discordgo.ApplicationCommandOption
 }
 
-// AddChoice adds a choice to an option, value should be the same as the choice's type.
-func (o *Option) AddChoice(name string, value interface{}) *discordgo.ApplicationCommandOptionChoice {
+// NewOption returns an option with given name and type.
+func NewOption(name string, t discordgo.ApplicationCommandOptionType) *Option {
+	if name == "" {
+		log.Panic("empty option name")
+	}
+
+	return &Option{
+		&discordgo.ApplicationCommandOption{
+			Type: t,
+			Name: name,
+		},
+	}
+}
+
+// WithDescription changes the description of the Option and returns itself, so that it can be chained.
+func (o *Option) WithDescription(description string) *Option {
+	o.Description = description
+	return o
+}
+
+// IsRequired sets the requirement of the Option to true and returns itself, so that it can be chained. By default an Option is not required.
+func (o *Option) IsRequired() *Option {
+	o.Required = true
+	return o
+}
+
+// AddChoice adds a choice to an option, value should be the same as the choice's type and returns itself, so that it can be chained.
+func (o *Option) AddChoice(name string, value interface{}) *Option {
 	c := &discordgo.ApplicationCommandOptionChoice{
 		Name:  name,
 		Value: value,
 	}
 	o.Choices = append(o.Choices, c)
-	return c
-}
-
-// AddOption adds an Option to the SlashCommand.
-func (s *SlashCommand) AddOption(name, description string, required bool, t discordgo.ApplicationCommandOptionType) (*Option, error) {
-	if name == "" {
-		return nil, errors.New("Empty Option name")
-	}
-
-	ch, ok := s.Handler.(*SingleCommandHandler)
-	if !ok {
-		return nil, fmt.Errorf("Slash Command '%v' is not a SingleCommandHandler and does not support Options", s.Name)
-	}
-
-	for _, v := range ch.Options {
-		if v.Name == name {
-			return nil, fmt.Errorf("Option '%v' already exists", name)
-		}
-	}
-
-	o := &Option{&discordgo.ApplicationCommandOption{
-		Type:        t,
-		Name:        name,
-		Description: description,
-		Required:    required,
-	}}
-
-	ch.Options = append(ch.Options, o)
-	return o, nil
+	return o
 }

@@ -29,9 +29,12 @@ func init() {
 }
 
 func main() {
-	h.GuildAddSlashCommand("ping", "Responds to the user with 'Pong!'", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		h.Respond(i, "Pong!")
-	})
+	h.AddCommand(harmonia.NewSlashCommand("ping").
+		WithDescription("Responds to the user with 'Pong!'").
+		WithGuildID(*GuildID).
+		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+			h.Respond(i, "Pong!")
+		}))
 
 	err := h.Run()
 	if err != nil {
