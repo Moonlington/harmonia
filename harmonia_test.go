@@ -1,22 +1,31 @@
 package harmonia
 
 import (
+	"log"
 	"os"
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
 	h *Harmonia
 
-	envBotToken = os.Getenv("H_TOKEN")
+	envBotToken string
 	// envGuild    = os.Getenv("H_GUILD")
 	// envAdmin    = os.Getenv("H_ADMIN")
 )
 
 func TestMain(m *testing.M) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Panic("Error loading .env file")
+	}
+
+	envBotToken = os.Getenv("H_TOKEN")
+
 	if envBotToken != "" {
 		if harm, err := New(envBotToken); err == nil {
 			h = harm
@@ -39,29 +48,18 @@ func TestNewToken(t *testing.T) {
 	assert.NotEqual(t, "", harm.Token)
 }
 
-func TestAddSlashCommand(t *testing.T) {
-	harm := &Harmonia{Commands: make(map[string]*SlashCommand)}
-	t.Run("Slash Command with no name", func(t *testing.T) {
-		s, err := harm.AddSlashCommand("", "", func(h *Harmonia, i *Invocation) {})
-		assert.Nil(t, s)
-		assert.EqualError(t, err, "Empty Slash Command name")
-	})
-	t.Run("Slash Command with Invalid Name", func(t *testing.T) {
-		s, err := harm.AddSlashCommand("test/", "", func(h *Harmonia, i *Invocation) {})
-		assert.Nil(t, s)
-		assert.EqualError(t, err, "Slash Command name does not match with the CHAT_INPUT regex.")
-	})
+func TestAddCommand(t *testing.T) {
+	harm := &Harmonia{Commands: make(map[string]CommandHandler)}
+
+	command := NewSlashCommand("test")
 	t.Run("Correct Slash Command", func(t *testing.T) {
-		handlerFunc := func(h *Harmonia, i *Invocation) {}
-		s, err := harm.AddSlashCommand("test", "", handlerFunc)
+		err := harm.AddCommand(command)
 		assert.Nil(t, err)
-		assert.NotNil(t, s)
-		assert.NotNil(t, harm.Commands["test"])
+		assert.Equal(t, command, harm.Commands["test"])
 	})
 	t.Run("Duplicate Slash Command", func(t *testing.T) {
-		s, err := harm.AddSlashCommand("test", "", func(h *Harmonia, i *Invocation) {})
-		assert.Nil(t, s)
-		assert.EqualError(t, err, "Slash Command 'test' already exists")
+		err := harm.AddCommand(command)
+		assert.EqualError(t, err, "command 'test' already exists")
 	})
 }
 
