@@ -1,6 +1,8 @@
 package harmonia
 
 import (
+	"log"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -12,7 +14,7 @@ type Option struct {
 // NewOption returns an option with given name and type.
 func NewOption(name string, t discordgo.ApplicationCommandOptionType) *Option {
 	if name == "" {
-		panic("empty option name")
+		log.Panic("empty option name")
 	}
 
 	return &Option{
@@ -29,18 +31,18 @@ func (o *Option) WithDescription(description string) *Option {
 	return o
 }
 
-// WithRequired sets the requirement of the Option and returns itself, so that it can be chained.
-func (o *Option) WithRequired(required bool) *Option {
-	o.Required = required
+// IsRequired sets the requirement of the Option to true and returns itself, so that it can be chained.
+func (o *Option) IsRequired() *Option {
+	o.Required = true
 	return o
 }
 
-// AddChoice adds a choice to an option, value should be the same as the choice's type.
-func (o *Option) AddChoice(name string, value interface{}) *discordgo.ApplicationCommandOptionChoice {
+// AddChoice adds a choice to an option, value should be the same as the choice's type and returns itself, so that it can be chained.
+func (o *Option) AddChoice(name string, value interface{}) *Option {
 	c := &discordgo.ApplicationCommandOptionChoice{
 		Name:  name,
 		Value: value,
 	}
 	o.Choices = append(o.Choices, c)
-	return c
+	return o
 }
