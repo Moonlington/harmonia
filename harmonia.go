@@ -334,7 +334,10 @@ func (h *Harmonia) RemoveCommand(name string) error {
 // RemoveAllCommands does removes all registered commands on this Harmonia instance and from the Discord API.
 func (h *Harmonia) RemoveAllCommands() error {
 	for name := range h.Commands {
-		h.RemoveCommand(name)
+		err := h.RemoveCommand(name)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
