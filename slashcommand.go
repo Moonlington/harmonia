@@ -1,6 +1,7 @@
 package harmonia
 
 import (
+	"log"
 	"regexp"
 
 	"github.com/bwmarrin/discordgo"
@@ -23,11 +24,11 @@ type SlashCommand struct {
 // NewSlashCommand returns a SlashCommand with a given name
 func NewSlashCommand(name string) *SlashCommand {
 	if name == "" {
-		panic("empty command name")
+		log.Panic("empty command name")
 	}
 
 	if !slashCommandNameRegex.MatchString(name) {
-		panic("slash command name does not match with the CHAT_INPUT regex.")
+		log.Panic("slash command name does not match with the CHAT_INPUT regex.")
 	}
 
 	return &SlashCommand{
