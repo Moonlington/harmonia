@@ -33,56 +33,61 @@ func init() {
 func main() {
 	number := 0
 
-	h.GuildAddSlashCommand("number", "Increase or decrease the internal number!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		msg, err := h.RespondWithComponents(i, fmt.Sprintf("The current number is %v!", number), [][]discordgo.MessageComponent{
-			{
-				discordgo.Button{
-					Label:    "Increase by 1",
-					Style:    discordgo.SuccessButton,
-					CustomID: "n_increase",
+	cmd := harmonia.NewSlashCommand("number").
+		WithDescription("Increase or decrease the internal number!").
+		WithGuildID(*GuildID).
+		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+			msg, err := h.RespondWithComponents(i, fmt.Sprintf("The current number is %v!", number), [][]discordgo.MessageComponent{
+				{
+					discordgo.Button{
+						Label:    "Increase by 1",
+						Style:    discordgo.SuccessButton,
+						CustomID: "n_increase",
+					},
+					discordgo.Button{
+						Label:    "Decrease by 1",
+						Style:    discordgo.DangerButton,
+						CustomID: "n_decrease",
+					},
+				}, {
+					discordgo.Button{
+						Label:    "Reset to 0",
+						Style:    discordgo.PrimaryButton,
+						CustomID: "n_reset",
+					},
 				},
-				discordgo.Button{
-					Label:    "Decrease by 1",
-					Style:    discordgo.DangerButton,
-					CustomID: "n_decrease",
-				},
-			}, {
-				discordgo.Button{
-					Label:    "Reset to 0",
-					Style:    discordgo.PrimaryButton,
-					CustomID: "n_reset",
-				},
-			},
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
+			})
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		h.AddComponentHandlerToInteractionMessage(msg, "n_increase", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
-			if i.Author.ID == ci.Author.ID {
-				number++
-				h.EphemeralRespond(ci, fmt.Sprintf("The number has been increased to %v", number))
-			} else {
-				h.EphemeralRespond(ci, "Only the original caller of the function can use it!")
-			}
+			h.AddComponentHandlerToInteractionMessage(msg, "n_increase", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
+				if i.Author.ID == ci.Author.ID {
+					number++
+					h.EphemeralRespond(ci, fmt.Sprintf("The number has been increased to %v", number))
+				} else {
+					h.EphemeralRespond(ci, "Only the original caller of the function can use it!")
+				}
+			})
+			h.AddComponentHandlerToInteractionMessage(msg, "n_decrease", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
+				if i.Author.ID == ci.Author.ID {
+					number--
+					h.EphemeralRespond(ci, fmt.Sprintf("The number has been decreased to %v", number))
+				} else {
+					h.EphemeralRespond(ci, "Only the original caller of the function can use it!")
+				}
+			})
+			h.AddComponentHandlerToInteractionMessage(msg, "n_reset", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
+				if i.Author.ID == ci.Author.ID {
+					number = 0
+					h.EphemeralRespond(ci, fmt.Sprintf("The number has been reset to %v", number))
+				} else {
+					h.EphemeralRespond(ci, "Only the original caller of the function can use it!")
+				}
+			})
 		})
-		h.AddComponentHandlerToInteractionMessage(msg, "n_decrease", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
-			if i.Author.ID == ci.Author.ID {
-				number--
-				h.EphemeralRespond(ci, fmt.Sprintf("The number has been decreased to %v", number))
-			} else {
-				h.EphemeralRespond(ci, "Only the original caller of the function can use it!")
-			}
-		})
-		h.AddComponentHandlerToInteractionMessage(msg, "n_reset", func(h *harmonia.Harmonia, ci *harmonia.Invocation) {
-			if i.Author.ID == ci.Author.ID {
-				number = 0
-				h.EphemeralRespond(ci, fmt.Sprintf("The number has been reset to %v", number))
-			} else {
-				h.EphemeralRespond(ci, "Only the original caller of the function can use it!")
-			}
-		})
-	})
+
+	h.AddCommand(cmd)
 
 	err := h.Run()
 	if err != nil {

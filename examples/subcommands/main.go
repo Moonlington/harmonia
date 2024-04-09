@@ -29,17 +29,36 @@ func init() {
 }
 
 func main() {
-	c, _ := h.GuildAddSlashCommandWithSubcommands("main", "Subcommands example", *GuildID)
-	c.AddSubcommand("first", "First subcommand!", func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		h.Respond(i, "This is the first subcommand!")
-	})
-	c.AddSubcommand("second", "Second subcommand!", func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		h.Respond(i, "This is the second subcommand!")
-	})
-	group, _ := c.AddSubcommandGroup("third", "Third subcommand, but a group!")
-	group.AddSubcommand("fourth", "Fourth subcommand, but nested in the third one! I guess it's the actual third subcommand?", func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		h.Respond(i, "This is the REAL third subcommand!")
-	})
+	cmd := harmonia.NewGroupSlashCommand("main").
+		WithDescription("Subcommands example").
+		WithGuildID(*GuildID)
+
+	cmd1 := harmonia.NewSlashCommand("first").
+		WithDescription("First subcommand!").
+		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+			h.Respond(i, "This is the first subcommand!")
+		})
+
+	cmd2 := harmonia.NewSlashCommand("second").
+		WithDescription("Second subcommand!").
+		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+			h.Respond(i, "This is the second subcommand!")
+		})
+
+	cmd3 := harmonia.NewGroupSlashCommand("third").
+		WithDescription("Third subcommand, but a group!")
+
+	cmd4 := harmonia.NewSlashCommand("fourth").
+		WithDescription("Fourth subcommand, but nested in the third one! I guess it's the actual third subcommand?").
+		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+			h.Respond(i, "This is the REAL third subcommand!")
+		})
+
+	cmd3.WithSubCommands(cmd4)
+
+	cmd.WithSubCommands(cmd1, cmd2, cmd3)
+
+	h.AddCommand(cmd)
 
 	err := h.Run()
 	if err != nil {

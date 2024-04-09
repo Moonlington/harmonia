@@ -1,132 +1,108 @@
 package harmonia
 
 import (
-	"errors"
-	"fmt"
+	"log"
+	"regexp"
 
 	"github.com/bwmarrin/discordgo"
 )
 
+var slashCommandNameRegex = regexp.MustCompile(`^[-_\p{L}\p{N}]{1,32}$`)
+
 // A SlashCommand describes a slash command or CHAT_INPUT application command.
 type SlashCommand struct {
-	Name         string
-	Description  string
-	GuildID      string
-	Handler      CommandHandler
+	name               string
+	description        string
+	guildID            string
+	dmPermission       bool
+	defaultPermissions int64
+
+	commandFunc CommandFunc
+	options     []*Option
+
 	registration *discordgo.ApplicationCommand
 }
 
-// AddSubcommand adds a Subcommand to a SlashCommand, this can only be done if the SlashCommand was created as a Subcommand Group. See AddSlashCommandWithSubcommands for more information.
-func (s *SlashCommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SlashSubcommand, err error) {
+// NewSlashCommand returns a SlashCommand with a given name
+func NewSlashCommand(name string) *SlashCommand {
 	if name == "" {
-		return nil, errors.New("Empty Subcommand name")
+		log.Panic("empty command name")
 	}
 
-	ch, ok := s.Handler.(*CommandGroupHandler)
-	if !ok {
-		return nil, fmt.Errorf("Slash Command '%v' does not have a SubcommandHandler", s.Name)
+	if !slashCommandNameRegex.MatchString(name) {
+		log.Panic("slash command name does not match with the CHAT_INPUT regex.")
 	}
 
-	if _, ok := ch.Subcommands[name]; ok {
-		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
+	return &SlashCommand{
+		name: name,
 	}
-
-	sub = &SlashSubcommand{
-		Name:        name,
-		Description: description,
-		Handler:     &SingleCommandHandler{Handler: handler},
-	}
-
-	ch.Subcommands[name] = sub
-	return
 }
 
-// AddSubcommand adds a Subcommand Group to a SlashCommand.
-func (s *SlashCommand) AddSubcommandGroup(name, description string) (sub *SlashSubcommand, err error) {
-	if name == "" {
-		return nil, errors.New("Empty Subcommand name")
-	}
-
-	ch, ok := s.Handler.(*CommandGroupHandler)
-	if !ok {
-		return nil, fmt.Errorf("Slash Command '%v' does not have a SubcommandHandler", s.Name)
-	}
-
-	if _, ok := ch.Subcommands[name]; ok {
-		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
-	}
-
-	sub = &SlashSubcommand{
-		Name:        name,
-		Description: description,
-		IsGroup:     true,
-		Handler:     &CommandGroupHandler{Subcommands: make(map[string]*SlashSubcommand)},
-	}
-
-	ch.Subcommands[name] = sub
-	return
+// WithDescription changes the description of the SlashCommand and returns itself, so that it can be chained.
+func (s *SlashCommand) WithDescription(description string) *SlashCommand {
+	s.description = description
+	return s
 }
 
-// SlashSubcommand describes a Subcommand or a Subcommand group to a SlashCommand.
-type SlashSubcommand struct {
-	Name        string
-	Description string
-	IsGroup     bool
-	Handler     CommandHandler
+// WithGuildID changes the guildID of the SlashCommand and returns itself, so that it can be chained.
+func (s *SlashCommand) WithGuildID(guildID string) *SlashCommand {
+	s.guildID = guildID
+	return s
 }
 
-// AddSubcommand adds a Subcommand to a SubSlashCommand.
-func (s *SlashSubcommand) AddSubcommand(name, description string, handler func(h *Harmonia, i *Invocation)) (sub *SlashSubcommand, err error) {
-	if name == "" {
-		return nil, errors.New("Empty Subcommand name")
-	}
-
-	ch, ok := s.Handler.(*CommandGroupHandler)
-	if !ok {
-		return nil, fmt.Errorf("Subcommand '%v' does not have a SubcommandHandler", s.Name)
-	}
-
-	if _, ok := ch.Subcommands[name]; ok {
-		return nil, fmt.Errorf("Subcommand '%v' already exists", name)
-	}
-
-	sub = &SlashSubcommand{
-		Name:        name,
-		Description: description,
-		Handler:     &SingleCommandHandler{Handler: handler},
-	}
-
-	ch.Subcommands[name] = sub
-	return
+// WithDMPermission changes the DM Permission of the SlashCommand and returns itself, so that it can be chained.
+func (s *SlashCommand) WithDMPermission(isAllowed bool) *SlashCommand {
+	s.dmPermission = isAllowed
+	return s
 }
 
-// An Invocation describes an incoming Interaction.
-type Invocation struct {
-	*discordgo.Interaction
-	Guild   *discordgo.Guild
-	Channel *discordgo.Channel
-	Author  *Author
-
-	options []*discordgo.ApplicationCommandInteractionDataOption
-
-	// Only when the incoming Interaction is from a SelectMenu component.
-	Values []string
+// WithDefaultPermissions changes the DefaultPermissions of the SlashCommand and returns itself, so that it can be chained.
+func (s *SlashCommand) WithDefaultPermissions(defaultPermissions int64) *SlashCommand {
+	s.defaultPermissions = defaultPermissions
+	return s
 }
 
-// GetOptionMap returns a map of options passed through the Invocation.
-func (i *Invocation) GetOptionMap() map[string]*discordgo.ApplicationCommandInteractionDataOption {
-	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(i.options))
-	for _, opt := range i.options {
-		optionMap[opt.Name] = opt
-	}
-	return optionMap
+// WithCommand changes the CommandFunc that is called when the SlashCommand is executed and returns itself, so that it can be chained.
+func (s *SlashCommand) WithCommand(commandFunc CommandFunc) *SlashCommand {
+	s.commandFunc = commandFunc
+	return s
 }
 
-// GetOption returns a specific option from an Invocation.
-func (i *Invocation) GetOption(name string) *discordgo.ApplicationCommandInteractionDataOption {
-	option, ok := i.GetOptionMap()[name]
-	if !ok {
-		return nil
+// WithOptions changes the options in the SlashCommand and returns itself, so that it can be chained.
+func (s *SlashCommand) WithOptions(options ...*Option) *SlashCommand {
+	s.options = options
+	return s
+}
+
+func (s *SlashCommand) GetName() string {
+	return s.name
+}
+
+func (s *SlashCommand) Do(h *Harmonia, i *Invocation) {
+	go s.commandFunc(h, i)
+}
+
+func (s *SlashCommand) getRegistration() *discordgo.ApplicationCommand {
+	if s.registration != nil {
+		return s.registration
 	}
-	return option
+
+	options := make([]*discordgo.ApplicationCommandOption, len(s.options))
+	for i, v := range s.options {
+		options[i] = v.ApplicationCommandOption
+	}
+
+	return &discordgo.ApplicationCommand{
+		Name:                     s.name,
+		Description:              s.description,
+		GuildID:                  s.guildID,
+		Options:                  options,
+		DMPermission:             &s.dmPermission,
+		DefaultMemberPermissions: &s.defaultPermissions,
+		Type:                     discordgo.ChatApplicationCommand,
+	}
+}
+
+func (s *SlashCommand) setRegistration(registration *discordgo.ApplicationCommand) {
+	s.registration = registration
 }
