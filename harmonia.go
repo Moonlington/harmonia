@@ -241,8 +241,8 @@ func (h *Harmonia) Run() error {
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
 			if command, ok := h.Commands[i.ApplicationCommandData().Name]; ok {
-				guild, _ := h.State.Guild(i.GuildID)
-				channel, _ := h.State.Channel(i.ChannelID)
+				guild, _ := h.Guild(i.GuildID)
+				channel, _ := h.Channel(i.ChannelID)
 				author, _ := AuthorFromInteraction(h, i.Interaction)
 				options := i.ApplicationCommandData().Options
 
@@ -258,8 +258,8 @@ func (h *Harmonia) Run() error {
 			return
 		case discordgo.InteractionMessageComponent:
 			if componentHandler, ok := h.ComponentHandlers[i.MessageComponentData().CustomID]; ok {
-				guild, _ := h.State.Guild(i.GuildID)
-				channel, _ := h.State.Channel(i.ChannelID)
+				guild, _ := h.Guild(i.GuildID)
+				channel, _ := h.Channel(i.ChannelID)
 				author, _ := AuthorFromInteraction(h, i.Interaction)
 				values := i.MessageComponentData().Values
 
@@ -276,8 +276,8 @@ func (h *Harmonia) Run() error {
 			followupcustomID := fmt.Sprintf("%v-%v", i.Message.ID, i.MessageComponentData().CustomID)
 
 			if componentHandler, ok := h.ComponentHandlers[followupcustomID]; ok {
-				guild, _ := h.State.Guild(i.GuildID)
-				channel, _ := h.State.Channel(i.ChannelID)
+				guild, _ := h.Guild(i.GuildID)
+				channel, _ := h.Channel(i.ChannelID)
 				author, _ := AuthorFromInteraction(h, i.Interaction)
 				values := i.MessageComponentData().Values
 

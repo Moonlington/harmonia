@@ -41,7 +41,7 @@ func (i *Invocation) GetOption(name string) *discordgo.ApplicationCommandInterac
 // TargetAuthor takes the targetID from the invocation and returns an Author struct from it.
 func (i *Invocation) TargetAuthor(h *Harmonia) (*Author, error) {
 	if i.Guild != nil {
-		member, err := h.State.Member(i.Guild.ID, i.targetID)
+		member, err := h.GuildMember(i.Guild.ID, i.targetID)
 		if err != nil {
 			return nil, err
 		}
