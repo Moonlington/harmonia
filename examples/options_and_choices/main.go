@@ -31,20 +31,29 @@ func init() {
 }
 
 func main() {
-	cmd, _ := h.GuildAddSlashCommand("blep", "Send a random adorable animal photo", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		smol := ""
-		if i.GetOption("only_smol") != nil && i.GetOption("only_smol").BoolValue() {
-			smol = "baby "
-		}
-		h.Respond(i, fmt.Sprintf("Sending picture of a %v%v!", smol, i.GetOption("animal").StringValue()))
-	})
+	opt := harmonia.NewOption("animal", discordgo.ApplicationCommandOptionString).
+		WithDescription("The type of animal").
+		IsRequired().
+		AddChoice("Dog", "dog").
+		AddChoice("Cat", "dog").
+		AddChoice("Penguin", "penguin")
 
-	opt, _ := cmd.AddOption("animal", "The type of animal", true, discordgo.ApplicationCommandOptionString)
-	opt.AddChoice("Dog", "dog")
-	opt.AddChoice("Cat", "dog")
-	opt.AddChoice("Penguin", "penguin")
+	opt2 := harmonia.NewOption("only_smol", discordgo.ApplicationCommandOptionBoolean).
+		WithDescription("Wether to show only baby animals")
 
-	cmd.AddOption("only_smol", "Whether to show only baby animals", false, discordgo.ApplicationCommandOptionBoolean)
+	cmd := harmonia.NewSlashCommand("blep").
+		WithDescription("Send an adorable animal photo").
+		WithGuildID(*GuildID).
+		WithOptions(opt, opt2).
+		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+			smol := ""
+			if i.GetOption("only_smol") != nil && i.GetOption("only_smol").BoolValue() {
+				smol = "baby "
+			}
+			h.Respond(i, fmt.Sprintf("Sending picture of a %v%v!", smol, i.GetOption("animal").StringValue()))
+		})
+
+	h.AddCommand(cmd)
 
 	err := h.Run()
 	if err != nil {

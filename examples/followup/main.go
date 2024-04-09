@@ -30,17 +30,22 @@ func init() {
 }
 
 func main() {
-	h.GuildAddSlashCommand("ping", "Responds to the user with 'Pong!'... and then again after 5 seconds!", *GuildID, func(h *harmonia.Harmonia, i *harmonia.Invocation) {
-		h.Respond(i, "Pong!")
+	cmd := harmonia.NewSlashCommand("ping").
+		WithDescription("Responds to the user with 'Pong!'... and then again after 5 seconds!").
+		WithGuildID(*GuildID).
+		WithCommand(func(h *harmonia.Harmonia, i *harmonia.Invocation) {
+			h.Respond(i, "Pong!")
 
-		time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 5)
 
-		f, _ := h.Followup(i, "Pong again!")
+			f, _ := h.Followup(i, "Pong again!")
 
-		time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 5)
 
-		h.EditFollowup(f, "Edited Pong!")
-	})
+			h.EditFollowup(f, "Edited Pong!")
+		})
+
+	h.AddCommand(cmd)
 
 	err := h.Run()
 	if err != nil {
