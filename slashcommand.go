@@ -57,8 +57,8 @@ func (s *SlashCommand) WithDMPermission(isAllowed bool) *SlashCommand {
 }
 
 // WithDefaultPermissions changes the DefaultPermissions of the SlashCommand and returns itself, so that it can be chained.
-func (s *SlashCommand) WithDefaultPermissions(defaultPermissions *int64) *SlashCommand {
-	s.defaultPermissions = defaultPermissions
+func (s *SlashCommand) WithDefaultPermissions(defaultPermissions int64) *SlashCommand {
+	s.defaultPermissions = &defaultPermissions
 	return s
 }
 

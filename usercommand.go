@@ -42,8 +42,8 @@ func (s *UserCommand) WithDMPermission(isAllowed bool) *UserCommand {
 }
 
 // WithDefaultPermissions changes the DefaultPermissions of the UserCommand and returns itself, so that it can be chained.
-func (s *UserCommand) WithDefaultPermissions(defaultPermissions *int64) *UserCommand {
-	s.defaultPermissions = defaultPermissions
+func (s *UserCommand) WithDefaultPermissions(defaultPermissions int64) *UserCommand {
+	s.defaultPermissions = &defaultPermissions
 	return s
 }
 

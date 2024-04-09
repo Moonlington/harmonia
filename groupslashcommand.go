@@ -73,8 +73,8 @@ func (s *GroupSlashCommand) WithDMPermission(isAllowed bool) *GroupSlashCommand 
 }
 
 // WithDefaultPermissions changes the DefaultPermissions of the GroupSlashCommand and returns itself, so that it can be chained.
-func (s *GroupSlashCommand) WithDefaultPermissions(defaultPermissions *int64) *GroupSlashCommand {
-	s.defaultPermissions = defaultPermissions
+func (s *GroupSlashCommand) WithDefaultPermissions(defaultPermissions int64) *GroupSlashCommand {
+	s.defaultPermissions = &defaultPermissions
 	return s
 }
 
